@@ -1,0 +1,12 @@
+# R
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+.Rprofile
+# renv
+renv.lock
+renv/
+
+# MacOS
+.DS_Store
