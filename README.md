@@ -47,5 +47,4 @@ The following describes the structure of the file `missing_data_code.R`.
 		- 3A -- MCAR in a outcome variable (`lower52_MCAR`)
 		- 3B -- MAR in a outcome variable (`lower52_MAR`)
 		- 3C -- MNAR in a outcome variable (`lower52_MNAR`)
-- Imputation step
-- Statistical analyses and comparison
+- Imputation & Statistical analyses and comparison

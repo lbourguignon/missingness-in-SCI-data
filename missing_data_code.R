@@ -2,7 +2,7 @@
 # SCI - Handling missing data project
 # L. Bourguignon
 # First version : 06.07.2021
-# Last update : 27.07.2021
+# Last update : 02.08.2021
 ################################################################################
 
 ################################################################################
@@ -25,10 +25,15 @@ sygen_raw <- read.csv(paste(data_path, 'Sygen/JohnKramersProject_DATA_2019-10-07
 # Functions
 ################################################################################
 
+# Function to subset columns in vec from dataframe df
+# Output is a dataframe
 subset_col <- function(vec, df){
   return(df[vec])
 }
 
+# Function to add string week to all elements of vec as pre- or suffix 
+# based on order (take values 'before' or 'after')
+# Output is a vector
 vector_var <- function(vec, week, order){
   if (order == 'before'){
     return(paste(week, vec, sep=""))
@@ -38,12 +43,17 @@ vector_var <- function(vec, week, order){
   }
 }
 
+# Function to introduce NAs completely at random from column col in dataframe df 
+# Output is a vector
 generate_missing_col_CAR <- function(data, prop, col){
   vec <- c(sygen_analysis_subset[[col]])
   is.na(vec) <- sample(length(vec), prop*length(vec))
   return (vec)
 }
 
+# Function to introduce NAs at random (more missingness in male population) 
+# from column col in dataframe df
+# Output is a dataframe with columns ptid and paste0(col, '_MAR')
 generate_missing_col_AR <- function(data, prop, col){
   data_female <- data[data$sexcd == 1,]
   data_male <- data[data$sexcd == 2,]
@@ -60,12 +70,23 @@ generate_missing_col_AR <- function(data, prop, col){
   return (df_combined)
 }
 
-generate_missing_col_NAR <- function(data, col){
+# Function to introduce NAs not at random (more AIS D are missing) 
+# from column col in dataframe `df`
+# Output is a vector 
+# /!\ --> more work needed on this function, proportions not included at the moment
+generate_missing_col_NAR <- function(data, prop, col){
   if (col == 'ais1'){
     data[col][data[col] == 'AIS D'] <- NA
     data[col][data[col] == 'AIS C'] <- NA
     vec <- c(data[[col]])
   } else if (col == 'lower01'){
+    med = median(data[col])
+    sygen_analysis_subset$test[data[col] > med] = 
+      sample(c(data[col], NA), 
+             sum(data[col] > med), 
+             replace = TRUE,
+             prob = c(0.2, 0.8))
+    
     data[col][data[col] > 0] <- NA
     vec <- c(data[[col]])
   } else if (col == 'lower52'){
@@ -74,6 +95,39 @@ generate_missing_col_NAR <- function(data, col){
   }
   return (vec)
 }
+
+
+# ------- Brouillon ------- #
+sygen_analysis_subset$test[sygen_analysis_subset$ais1 == "AIS D"] = 
+  sample(c("AIS D", NA), 
+         sum(sygen_analysis_subset$ais1 == "AIS D"), 
+         replace = TRUE,
+         prob = c(0.1, 0.9))
+sygen_analysis_subset$test[sygen_analysis_subset$ais1 == "AIS A"] = 
+  sample(c("AIS A", NA), 
+         sum(sygen_analysis_subset$ais1 == "AIS A"), 
+         replace = TRUE,
+         prob = c(0.9, 0.1))
+sygen_analysis_subset$test[sygen_analysis_subset$ais1 == "AIS B"] = 
+  sample(c("AIS B", NA), 
+         sum(sygen_analysis_subset$ais1 == "AIS B"), 
+         replace = TRUE,
+         prob = c(0.8, 0.2))
+sygen_analysis_subset$test[sygen_analysis_subset$ais1 == "AIS C"] = 
+  sample(c("AIS C", NA), 
+         sum(sygen_analysis_subset$ais1 == "AIS C"), 
+         replace = TRUE,
+         prob = c(0.2, 0.8))
+
+quantile(sygen_analysis_subset$lower52, probs = seq(0, 1, by= 0.05))
+
+sygen_analysis_subset$test =
+  sample(c("Smoker", "Non-smoker", NA), 
+         dim(colon_s)[1], replace=TRUE, 
+         prob = c(0.2, 0.7, 0.1)) %>% 
+  factor() %>% 
+  ff_label("Smoking (MCAR)")
+# ------------------------- #
 
 ################################################################################
 # Report number of missing data depending on different scenarii in Sygen data
@@ -116,50 +170,56 @@ for (col in vector_var(timepoints[-1], 'ppscor', 'before')){
 }
 
 # Number of patients with all PP scores available
-#temp <- subset_col(vector_var(timepoints, 'ppscor', 'before'), sygen_raw)
-#dim(temp[complete.cases(temp), ])
+temp <- subset_col(vector_var(timepoints, 'ppscor', 'before'), sygen_raw)
+dim(temp[complete.cases(temp), ])
 
-# df_temp = subset_col(c('ppscor01'), sygen_raw)
-# df_temp['uems_outcome'] = get_outcome_vec('ppscor')
-# dim(df_temp[complete.cases(df_temp), ])
-# 
-# sygen_week01_pp <- subset_col(append(vector_var(sygen_levels, 'ppl52', 'after'), 
-#                                      vector_var(sygen_levels, 'ppr52', 'after')),
-#                               sygen_raw)
-# dim(sygen_week01_pp[complete.cases(sygen_week01_pp), ])
-# sygen_week01_lt <- subset_col(append(vector_var(sygen_levels, 'ltl52', 'after'), 
-#                                      vector_var(sygen_levels, 'ltr52', 'after')), 
-#                               sygen_raw)
-# dim(sygen_week01_lt[complete.cases(sygen_week01_lt), ])
-# 
-# sygen_week01_upper_mot <- subset_col(append(vector_var(sygen_vec_upper_mot, '52', 'after'), 
-#                                             c('ptid')), sygen_raw)
-# dim(sygen_week01_upper_mot[complete.cases(sygen_week01_upper_mot), ])
-# 
-# sygen_week01_lower_mot <- subset_col(append(vector_var(sygen_vec_lower_mot, '52', 'after'), 
-#                                             c('ptid')), sygen_raw)
-# dim(sygen_week01_lower_mot[complete.cases(sygen_week01_lower_mot), ])
-# 
-# sygen_week01_lower_mot <- subset_col(append(vector_var(sygen_vec_upper_mot, '00', 'after'), 
-#                                             c('ptid')), sygen_raw)
-# for (score in sygen_vec_upper_mot){
-#   print(score)
-#   sygen_week01_lower_mot[paste0(score, 'outcome')] <- get_outcome_vec(sco)
-# }
-# dim(sygen_week01_lower_mot[complete.cases(sygen_week01_lower_mot), ])
-# 
-# 
-# 
-# sygen_week01_pp <- subset_col(append(vector_var(sygen_levels, 'ppl01', 'after'), 
-#                                      vector_var(sygen_levels, 'ppr01', 'after')), 
-#                               sygen_raw)
-# for (sco in sygen_levels){
-#   scorel <- paste0(sco, 'ppl')
-#   scorer <- paste0(sco, 'ppr')
-#   sygen_week01_pp[paste0(scorel, 'outcomel')] <- get_outcome_vec(scorel)
-#   sygen_week01_pp[paste0(scorer, 'outcomer')] <- get_outcome_vec(scorer)
-# }
-# dim(sygen_week01_pp[complete.cases(sygen_week01_pp), ])
+# Number of patients with baseline and outcome for PP score available
+df_temp = subset_col(c('ppscor01'), sygen_raw)
+df_temp['pp_outcome'] = get_outcome_vec('ppscor')
+dim(df_temp[complete.cases(df_temp), ])
+
+# Number of patients with all PP subscores available at week 52
+sygen_week52_pp <- subset_col(append(vector_var(sygen_levels, 'ppl52', 'after'), 
+                                      vector_var(sygen_levels, 'ppr52', 'after')),
+                               sygen_raw)
+dim(sygen_week01_pp[complete.cases(sygen_week52_pp), ])
+
+# Number of patients with all LT subscores available at week 52
+sygen_week52_lt <- subset_col(append(vector_var(sygen_levels, 'ltl52', 'after'), 
+                                      vector_var(sygen_levels, 'ltr52', 'after')), 
+                               sygen_raw)
+dim(sygen_week52_lt[complete.cases(sygen_week52_lt), ])
+
+# Number of patients with all upper MS subscores available at week 52
+sygen_week52_upper_mot <- subset_col(append(vector_var(sygen_vec_upper_mot, '52', 'after'), 
+                                             c('ptid')), sygen_raw)
+dim(sygen_week52_upper_mot[complete.cases(sygen_week52_upper_mot), ])
+
+# Number of patients with all upper MS subscores available at week 52
+sygen_week52_lower_mot <- subset_col(append(vector_var(sygen_vec_lower_mot, '52', 'after'), 
+                                             c('ptid')), sygen_raw)
+dim(sygen_week52_lower_mot[complete.cases(sygen_week52_lower_mot), ])
+
+# Number of patients with baseline and outcome for UEMS subscores available
+sygen_week0052_upper_mot <- subset_col(append(vector_var(sygen_vec_upper_mot, '00', 'after'), 
+                                             c('ptid')), sygen_raw)
+for (score in sygen_vec_upper_mot){
+   print(score)
+  sygen_week0052_upper_mot[paste0(score, 'outcome')] <- get_outcome_vec(sco)
+}
+dim(sygen_week0052_upper_mot[complete.cases(sygen_week0052_upper_mot), ])
+ 
+# Number of patients with baseline and outcome for PP subscores available
+sygen_week0152_pp <- subset_col(append(vector_var(sygen_levels, 'ppl01', 'after'), 
+                                      vector_var(sygen_levels, 'ppr01', 'after')), 
+                               sygen_raw)
+for (sco in sygen_levels){
+   scorel <- paste0(sco, 'ppl')
+   scorer <- paste0(sco, 'ppr')
+   sygen_week0152_pp[paste0(scorel, 'outcomel')] <- get_outcome_vec(scorel)
+   sygen_week0152_pp[paste0(scorer, 'outcomer')] <- get_outcome_vec(scorer)
+}
+dim(sygen_week0152_pp[complete.cases(sygen_week0152_pp), ])
 
 ################################################################################
 # Visualise missing data in raw Sygen cohort
@@ -317,6 +377,21 @@ explanatory_full = c(explanatory_subset, 'lower01', 'ais1')
 sygen_analysis_subset %>% missing_pairs(dependent, explanatory)
 #sygen_analysis_subset %>% missing_pairs(dependent, explanatory, position = "fill", )
 
+# all MCAR columns combined
+explanatory_full = c("age", "sexcd", "splvl", 'lower01_MCAR', 'ais1_MCAR')
+sygen_analysis_subset %>% missing_pairs('lower52_MCAR', explanatory_full)
+sygen_analysis_subset %>% missing_pairs('lower52_MCAR', explanatory_full, position = "fill", )
+
+# all MAR columns combined
+explanatory_full = c("age", "sexcd", "splvl", 'lower01_MAR', 'ais1_MAR')
+sygen_analysis_subset %>% missing_pairs('lower52_MAR', explanatory_full)
+sygen_analysis_subset %>% missing_pairs('lower52_MAR', explanatory_full, position = "fill", )
+
+# all MNAR columns combined
+explanatory_full = c("age", "sexcd", "splvl", 'lower01_MNAR', 'ais1_MNAR')
+sygen_analysis_subset %>% missing_pairs('lower52_MNAR', explanatory_full)
+sygen_analysis_subset %>% missing_pairs('lower52_MNAR', explanatory_full, position = "fill", )
+
 #-------------------------------------------------------------------------------
 # 1A -- MCAR in a confounding variable (ais1_MCAR)
 #-------------------------------------------------------------------------------
@@ -400,11 +475,7 @@ dependent <- 'lower52_MNAR'
 sygen_analysis_subset %>% missing_pairs(dependent, explanatory_full, position = "fill", )
 
 ################################################################################
-# Imputation step
-################################################################################
-
-################################################################################
-# Statistical analyses
+# Imputation & Statistical analyses
 ################################################################################
 
 #-------------------------------------------------------------------------------
