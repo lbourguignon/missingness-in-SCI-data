@@ -62,28 +62,28 @@ generate_missing_col_AR <- function(data, prop, col){
 
 # ------------------------------------------------------------------------------
 
-# Function to introduce NAs not at random (more AIS D are missing) 
+# Function to introduce NAs not at random (more AIS D are missing)
 # from column col in dataframe `df`
-# Output is a vector 
+# Output is a vector
 ais_NAR <- function(x, weight_a, weight_b, weight_c, weight_d){
-  if (x == 'AIS A'){
-    x <- sample(c('AIS A', NA), 
-                1, 
+  if (x == 'A'){
+    x <- sample(c('A', NA),
+                1,
                 replace = F,
                 prob = c(1-weight_a, weight_a))
-  } else if (x == 'AIS B'){
-    x <- sample(c('AIS B', NA), 
-                1, 
+  } else if (x == 'B'){
+    x <- sample(c('B', NA),
+                1,
                 replace = F,
                 prob = c(1-weight_b, weight_b))
-  } else if (x == 'AIS C'){
-    x <- sample(c('AIS C', NA), 
-                1, 
+  } else if (x == 'C'){
+    x <- sample(c('C', NA),
+                1,
                 replace = F,
                 prob = c(1-weight_c, weight_c))
-  } else if (x == 'AIS D'){
-    x <- sample(c('AIS D', NA), 
-                1, 
+  } else if (x == 'D'){
+    x <- sample(c('D', NA),
+                1,
                 replace = F,
                 prob = c(1-weight_d, weight_d))
   }
