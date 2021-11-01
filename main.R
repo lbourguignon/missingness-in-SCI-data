@@ -59,28 +59,29 @@ dim(data)
 source("functions.R") # use relative path
 
 ################################################################################
-# Prepare Sygen data - step 1 (visual inspection of the raw data)
+# Prepare data - step 1 (visual inspection of the raw data)
 ################################################################################
 data <- data %>%
-  mutate(level = case_when(
-    grepl('C', splvl, fixed = TRUE) ~ "cervical",
-    grepl('T', splvl, fixed = TRUE) ~ "thoracic",
-    grepl('L', splvl, fixed = TRUE) ~ "lumbar"
-  ))
+    mutate(level = case_when(
+        grepl('C', splvl, fixed = TRUE) ~ "cervical",
+        grepl('T', splvl, fixed = TRUE) ~ "thoracic",
+        grepl('L', splvl, fixed = TRUE) ~ "lumbar")
+        ) %>%
+    mutate(level = factor(level,
+                          levels = c("cervical", "thoracic", "lumbar")))
 
 dim(data) # Sygen: n = 797 | EMSCI: 5216 (5220 if AIS E at baseline is included)
 head(data)
 
 ################################################################################
-# Visualise raw Sygen data
+# Visualise raw data
 ################################################################################
 
 ## Visualise original missingness patterns
-
 # ref for interpretation of the following plot:
 # https://cran.r-project.org/web/packages/finalfit/vignettes/missing.html
 
-data %>% # plot function part of finalfit library
+data %>% # missing_pairs function part of finalfit library
   missing_pairs("lower52", c("age", "sexcd", "level", "lower01", "ais1"))
 
 data %>%
@@ -92,10 +93,9 @@ data %>%
   missing_plot()
 
 # ------------------------------------------------------------------------------
+## Visualise the distributions of the different variables
 
 custom_theme <- theme(plot.title = element_text(hjust = 0.5))
-
-## Visualise the distributions of the different variables
 
 # AIS grade, i.e. severity
 severity <- ggplot(data, aes(ais1)) +
@@ -178,7 +178,7 @@ LEMS_by_AIS_distribution <- ggarrange(lems01_by_AIS, lems52_by_AIS,
 LEMS_by_AIS_distribution
 
 ################################################################################
-# Prepare Sygen data - step 2 (selecting only complete cases for analysis)
+# Prepare data - step 2 (selecting only complete cases for simulation)
 ################################################################################
 
 complete_cases <- data[complete.cases(data), ]
@@ -192,54 +192,58 @@ dim(complete_cases) # Sygen: n = 546 | EMSCI: n = 1171
 # Introduce missingness in column of your choice with pattern of your choice
 ################################################################################
 
-sygen_analysis_subset <- introduce_missingness(data = complete_cases,
-                                               cols = c('ais1', 'lower01', 'lower52'),
-                                               patterns = c('MCAR', 'MAR', 'MNAR'),
-                                               prop = 0.3)
+data_missing <- introduce_missingness(data = complete_cases,
+                                      cols = c('ais1', 'lower01', 'lower52'),
+                                      patterns = c('MCAR', 'MAR', 'MNAR'),
+                                      prop = 0.3)
 
-## Numeric variables
-cols.num <- c("age", "lower01", "lower01_MCAR", "lower01_MAR", "lower01_MNAR",
-              "lower52", "lower52_MCAR", "lower52_MAR", "lower52_MNAR")
-sygen_analysis_subset[cols.num] <- sapply(sygen_analysis_subset[cols.num], as.numeric)
+## integer-valued variables
+# cols.int <- c("age", "lower01", "lower01_MCAR", "lower01_MAR", "lower01_MNAR",
+#               "lower52", "lower52_MCAR", "lower52_MAR", "lower52_MNAR")
+# data_missing[cols.int] <- sapply(data_missing[cols.int],
+#                                  as.integer)
 
 ## Factor variables
+# cols.fac <- c("ais1", "splvl", "sexcd",
+#               "ais1_MCAR", "ais1_MAR", "ais1_MNAR", "level")
+# data_missing[cols.fac] <- sapply(data_missing[cols.fac],
+#                                  as.factor)
 
-cols.fac <- c("ais1", "splvl", "sexcd", 'ais1_MCAR', 'ais1_MAR', "ais1_MNAR", 'level')
-sygen_analysis_subset[cols.fac] <- sapply(sygen_analysis_subset[cols.fac], as.factor)
-
-# Transform AIS grade columns back to AIS and not numbers
-sygen_analysis_subset$ais1_MCAR <- aisgrade_levelfactor(sygen_analysis_subset$ais1_MCAR)
-sygen_analysis_subset$ais1_MAR <- aisgrade_levelfactor(sygen_analysis_subset$ais1_MAR)
-
-row.names(sygen_analysis_subset) <- NULL
+## check classes of individual variables
+sapply(data_missing, class)
+# ... it appears that only the ais1_MNAR column "gets lost" as a factor
+data_missing <- data_missing %>%
+    mutate(ais1_MNAR = factor(ais1_MNAR,
+                          levels = AIS_grades))
 
 # ------------------------------------------------------------------------------
 ## Sanity checks
-
-head(sygen_analysis_subset)
+head(data_missing)
 # Print column names
-names(sygen_analysis_subset)
+names(data_missing)
 # Proportion of missingness introduced
-sapply(sygen_analysis_subset, function(y) sum(length(which(is.na(y)))))
-sapply(sygen_analysis_subset, function(col)sum(is.na(col))/length(col))
+sapply(data_missing,
+       function(y) sum(length(which(is.na(y)))))
+sapply(data_missing,
+       function(col) sum(is.na(col))/length(col))
 # Type of each column
-sapply(sygen_analysis_subset, class)
+sapply(data_missing, class)
 
 ################################################################################
 # Evaluate the effect of different imputation strategies
 ################################################################################
 
-result_imputation_ais <- result_imputations(data = sygen_analysis_subset,
+result_imputation_ais <- result_imputations(data = data_missing,
                                             var = 'ais1',
                                             patterns = c('MCAR', 'MAR', 'MNAR'),
                                             imp = c('case_deletion', 'majority', 'regression'))
 
-result_imputation_lems01 <- result_imputations(data = sygen_analysis_subset,
+result_imputation_lems01 <- result_imputations(data = data_missing,
                                                var = 'lower01',
                                                patterns = c('MCAR', 'MAR', 'MNAR'),
                                                imp = c('case_deletion', 'mean', 'regression'))
 
-result_imputation_lems52 <- result_imputations(data = sygen_analysis_subset,
+result_imputation_lems52 <- result_imputations(data = data_missing,
                                                var = 'lower52',
                                                patterns = c('MCAR', 'MAR', 'MNAR'),
                                                imp = c('case_deletion', 'mean', 'regression'))
