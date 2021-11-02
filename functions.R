@@ -345,100 +345,111 @@ plot_imputation_results <- function(results_data, dist_data, var, patterns, imp)
     #'@param imp vector w/ imputation schemes applied (one or multiple of
     #'  case_deletion, mean, regression)
 
-  if (levels(factor(results_data$model))[1] != 'baseline'){
-    # LL: not entirely sure if this is required? it seems to achieve
-    #     that b"baseline" is the first level in factor, which should however not
-    #     make much of a difference if it is not an ordered factor?
-    # LL: purpose understood after going through entire plotting function
-    reduced_levels <- levels(factor(results_data$model))[levels(factor(results_data$model)) != 'baseline']
-    results_data$model <- factor(results_data$model,
-                                 levels = c("baseline", reduced_levels))
-  }
+    if (levels(factor(results_data$model))[1] != 'baseline'){
+        reduced_levels <- levels(factor(results_data$model))[levels(factor(results_data$model)) != 'baseline']
+        results_data$model <- factor(results_data$model,
+                                     levels = c("baseline", reduced_levels))
+        }
 
-  colors <- list('MCAR' = c('#000000', '#DC1C13', '#F07470', '#F6BDC0'),
-              'MAR' = c('#000000', '#0000FF', '#7879FF', '#BFBFFF'),
-              'MNAR' = c('#000000', '#2EB62C', '#83D475', '#C5E8B7'))
+    colors <- list('MCAR' = c('#000000', '#DC1C13', '#F07470', '#F6BDC0'),
+                   'MAR' = c('#000000', '#0000FF', '#7879FF', '#BFBFFF'),
+                   'MNAR' = c('#000000', '#2EB62C', '#83D475', '#C5E8B7'))
+    cbPalette <- c('black')
 
-  plots_distribution <- list()
-  cbPalette <- c('black')
-  for (pat in patterns){
-    if (var == 'ais1'){
-      plot_temp <- plot_AIS_distribution(dist_data, pat, colors[pat][[1]])
-    } else if (var == 'lower01'){
-      plot_temp <- plot_lems01_distribution(dist_data, pat, colors[pat][[1]])
-    } else if (var == 'lower52'){
-      plot_temp <- plot_lems52_distribution(dist_data, pat, colors[pat][[1]])
+    # generate plots of AIS distribution
+    n_patterns <- length(patterns)
+    plots_distribution <- vector("list", n_patterns)
+    for (i in 1:n_patterns){
+        pat <- patterns[i]
+        if (var == 'ais1') {
+            plots_distribution[[i]] <- plot_AIS_distribution(dist_data, pat, colors[pat][[1]])
+        } else if (var == 'lower01'){
+            plots_distribution[[i]] <- plot_lems01_distribution(dist_data, pat, colors[pat][[1]])
+        } else if (var == 'lower52'){
+            plots_distribution[[i]] <- plot_lems52_distribution(dist_data, pat, colors[pat][[1]])
+        }
+        cbPalette <- c(cbPalette, rep(colors[pat][[1]][3], length(imp)))
     }
-    plots_distribution <- list(plots_distribution, pat = plot_temp)
-    cbPalette <- c(cbPalette, rep(colors[pat][[1]][3], length(imp)))
-  }
 
-  shapes <- c(8, rep(c(0:(length(imp)-1)), length(patterns)))
+    # generate plots of coefficients and p-values
+    shapes <- c(8, rep(c(0:(length(imp)-1)), length(patterns)))
+    main_plots <- vector("list", 2)
+    names(main_plots) <-  c("coefs", "pvalues")
+    main_plots[["coefs"]] <- ggplot(results_data) +
+        geom_point(aes(x = coef, y = variables, colour = model, shape = model)) +
+        scale_shape_manual(values = shapes) +
+        scale_colour_manual(values = cbPalette) +
+        theme(legend.title = element_blank(),
+              legend.position = "top",
+              # legend.justification = c(1, 1),
+              legend.text  = element_text(size = 6),
+              legend.key.size = unit(.75, "lines"))
+    main_plots[["pvalues"]] <- ggplot(results_data) +
+        geom_point(aes(x = log(pvalues), y = variables, colour = model, shape = model)) +
+        scale_shape_manual(values = shapes) +
+        geom_vline(xintercept = log(0.05)) +
+        scale_colour_manual(values = cbPalette) +
+        theme(legend.title = element_blank(),
+              legend.position = "top",
+              # legend.justification = c(0.1, 0.1),
+              legend.text  = element_text(size = 6),
+              legend.key.size = unit(.75, "lines"))
 
-  coef_plot <- ggplot(results_data) +
-    geom_point(aes(x = coef, y = variables, colour = model, shape = model)) +
-    scale_shape_manual(values = shapes) +
-    scale_colour_manual(values = cbPalette)
+    # generate aggregate plots
+    final_plots <- vector("list", 2)
+    for (i in seq_along(main_plots)){
+        dist_grid <- plot_grid(plotlist = plots_distribution,
+                               ncol = 1)
+        final_plot <- plot_grid(main_plots[[i]], dist_grid,
+                                nrow = 1,
+                                labels = "AUTO")
+        final_plots[[i]] <- final_plot
+    }
 
-  pvalue_plot <- ggplot(results_data) +
-    geom_point(aes(x = log(pvalues), y = variables, colour = model, shape = model)) +
-    scale_shape_manual(values = shapes) +
-    geom_vline(xintercept = log(0.05)) +
-    scale_colour_manual(values = cbPalette)
-
-  final_plots <- list()
-  for (plot in c(coef_plot, pvalue_plot)){
-    final_plot <- ggarrange(plot,
-                            ggarrange(plots_distribution[1][[1]],
-                                      plots_distribution[2][[1]],
-                                      plots_distribution[3][[1]],
-                                      nrow = length(imp), labels = toupper(letters[2:(length(imp)+1)])
-                            ),
-                            ncol = 2,
-                            labels = "A")
-    final_plots <- append(final_plots, final_plot)
-  }
-
-  #final_plots <- list(coef_plot, pvalue_plot)
-
-  return(final_plots)
+  return (final_plots)
 }
 
 # ------------------------------------------------------------------------------
 
 plot_lems01_distribution <- function(dist_data, missing, col){
-  vec <- c("lower01", paste0("lower01_", missing), paste0("lower01_", missing, "_mean/majority"), paste0("lower01_", missing, "_regression"))
+  vec <- c("lower01",
+           paste0("lower01_", missing),
+           paste0("lower01_", missing, "_mean/majority"),
+           paste0("lower01_", missing, "_regression")
+           )
   subset_ais <- subset_col(c('ais1', vec), dist_data)
 
   subset_ais$ID <- seq.int(nrow(subset_ais)[1])
+  long_ais <- subset_ais %>%
+      pivot_longer(starts_with("lower01"),
+                   names_to = "scenario",
+                   values_to = "LEMS") %>%
+      mutate(scenario = factor(scenario))
 
-  long_ais <- melt(subset_ais,
-                   id.vars = c("ID", 'ais1'),
-                   variable.name = "LEMS")
-
-  plot <- ggplot(long_ais, aes(x=value, fill=LEMS)) +
-    geom_histogram(position="dodge") +
-    facet_grid(rows = vars(ais1), cols = vars(LEMS), scales = 'free')
+  plot <- ggplot(long_ais, aes(x=LEMS, fill=scenario)) +
+      geom_histogram(position = "dodge") +
+      facet_grid(rows = vars(ais1), cols = vars(scenario), scale = "free") +
+      theme(legend.position = "none")
 
   return (plot)
 }
 
 plot_AIS_distribution <- function(dist_data, missing, col){
-  vec <- c("ais1", paste0("ais1_", missing), paste0("ais1_", missing, "_mean/majority"), paste0("ais1_", missing, "_regression"))
+  vec <- c("ais1",
+           paste0("ais1_", missing),
+           paste0("ais1_", missing, "_mean/majority"),
+           paste0("ais1_", missing, "_regression")
+           )
   subset_ais <- subset_col(vec, dist_data)
 
   subset_ais$ID <- seq.int(nrow(subset_ais)[1])
-
-  # long_ais <- melt(as.data.table(subset_ais),
-  #                  id.vars = "ID",
-  #                  variable.name = "AIS") # %>% as_tibble()
-  long_ais_tidy <- subset_ais %>%
+  long_ais <- subset_ais %>%
       pivot_longer(starts_with("ais1"),
                    names_to = "scenario",
                    values_to = "AIS")
 
 
-  plot <- ggplot(long_ais_tidy, aes(AIS, fill=scenario)) +
+  plot <- ggplot(long_ais, aes(AIS, fill=scenario)) +
     geom_bar(position = "dodge") +
     scale_fill_manual(values = col,
                       labels = c("data",
@@ -458,28 +469,24 @@ plot_AIS_distribution <- function(dist_data, missing, col){
 }
 
 
-plot_lems52_distribution <- function(missing, col){
-  vec <- c("lower52", paste0("lower52_", missing), paste0("lower52_", missing, "_mean/majority"), paste0("lower01_", missing, "_regression"))
-  subset_ais <- subset_col(vec, sygen_analysis_subset)
-  if (missing == 'MCAR'){
-    subset_ais[paste0("lower52_", missing, "_regression")] <- sygen_analysis_subset_lower52_MCAR_imputed$lower52_MCAR
-  } else if (missing == 'MAR'){
-    subset_ais[paste0("lower52_", missing, "_regression")] <- sygen_analysis_subset_lower52_MAR_imputed$lower52_MAR
-  } else if (missing == 'MNAR'){
-    subset_ais[paste0("lower52_", missing, "_regression")] <- sygen_analysis_subset_lower52_MNAR_imputed$lower52_MNAR
-  } else {
-    print("Error in type of missingness. Valid choices are MCAR, MAR and MNAR.")
-  }
-
+plot_lems52_distribution <- function(dist_data, missing, col){
+  vec <- c("lower52",
+           paste0("lower52_", missing),
+           paste0("lower52_", missing, "_mean/majority"),
+           paste0("lower52_", missing, "_regression")
+           )
+  subset_ais <- subset_col(c("ais1", vec), dist_data)
   subset_ais$ID <- seq.int(nrow(subset_ais)[1])
+  long_ais <- subset_ais %>%
+      pivot_longer(starts_with("lower52"),
+                   names_to = "scenario",
+                   values_to = "LEMS") %>%
+      mutate(scenario = factor(scenario))
 
-  long_ais <- melt(subset_ais,
-                   id.vars = "ID",
-                   variable.name = "LEMS")
-
-  plot <- ggplot(long_ais, aes(x=value, y=LEMS)) +
-    geom_violin() +
-    stat_summary(fun.data=data_summary)
+  plot <- ggplot(long_ais, aes(x=LEMS, fill=scenario)) +
+      geom_histogram(position = "dodge") +
+      facet_grid(rows = vars(ais1), cols = vars(scenario), scale = "free") +
+      theme(legend.position = "none")
 
   return (plot)
 }
