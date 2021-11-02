@@ -16,37 +16,78 @@ library(cowplot)
 library(finalfit)
 library(mice)
 library(nnet)
-# library(ggpubr)
-# library(data.table)
 
 set.seed(1)
+
+# which data set?
+data.set <- "emsci" # sygen or emsci
+
+# path to remote storage (if mounted under MacOS)
+data_path = "/Volumes/borgwardt/Data/SCI/"
 
 ################################################################################
 # Data loading
 ################################################################################
 
-injury_levels = c(paste(rep("C", 8), 1:8, sep = ""),
-                  paste(rep("T", 10), 1:10, sep = ""),
-                  paste(rep("L", 5), 1:5, sep = ""),
-                  paste(rep("S", 5), 1:5, sep = ""))
-
-AIS_grades = c("A", "B", "C", "D", "E")
-
-data_path = "/Volumes/borgwardt/Data/SCI/"
-data <- read_csv(paste(data_path,
-                       "EMSCI/emsci_data_sygen_format.csv",
-                       sep = ""),
-                 col_types = list(ptid =  col_integer(),
-                                  age = col_integer(),
-                                  sexcd = col_factor(levels = c("1", # male
-                                                                "2") # female
-                                                     ),
-                                  splvl = col_factor(levels = injury_levels),
-                                  ais1 = col_factor(levels = AIS_grades),
-                                  lower01 = col_integer(),
-                                  lower52 = col_integer()),
-                 na = c("", "NA"),
-                 )
+if (data.set == "sygen") {
+    injury_levels  <-  c(paste(rep("C0", 8), 1:8, sep = ""),
+                      paste(rep("T0", 9), 1:9, sep = ""),
+                      paste(rep("T", 3), 10:12, sep = ""))
+    AIS_grades <- c("AIS A", "AIS B", "AIS C", "AIS D")
+    data <- read_csv(paste(data_path,
+                           "Sygen/JohnKramersProject_DATA_2019-10-07_0111.csv",
+                           sep = ""),
+                     col_types = list(ptid =  col_character(),
+                                      age = col_integer(),
+                                      sexcd = col_factor(levels = c("1", # male
+                                                                    "2") # female
+                                      ),
+                                      splvl = col_factor(levels = injury_levels),
+                                      ais1 = col_factor(levels = AIS_grades),
+                                      lower01 = col_integer(),
+                                      lower52 = col_integer()),
+                     col_select = c("ptid",
+                                    "age",
+                                    "sexcd",
+                                    "splvl",
+                                    "ais1",
+                                    "lower01",
+                                    "lower52"),
+                     na = c("", "NA")) %>%
+        mutate(
+            across(starts_with("ais"),
+                   ~recode(.,
+                           "AIS A" = "A",
+                           "AIS B" = "B",
+                           "AIS C" = "C",
+                           "AIS D" = "D")
+            )
+        )
+} else if (data.set == "emsci") {
+    injury_levels <- c(paste(rep("C", 8), 1:8, sep = ""),
+                      paste(rep("T", 10), 1:10, sep = ""),
+                      paste(rep("L", 5), 1:5, sep = ""),
+                      paste(rep("S", 5), 1:5, sep = ""))
+    AIS_grades <- c("A", "B", "C", "D", "E")
+    data <- read_csv(paste(data_path,
+                           "EMSCI/emsci_data_sygen_format.csv",
+                           # "Sygen/JohnKramersProject_DATA_2019-10-07_0111.csv",
+                           sep = ""),
+                     col_types = list(ptid =  col_integer(),
+                                      age = col_integer(),
+                                      sexcd = col_factor(levels = c("1", # male
+                                                                    "2") # female
+                                      ),
+                                      splvl = col_factor(levels = injury_levels),
+                                      ais1 = col_factor(levels = AIS_grades),
+                                      lower01 = col_integer(),
+                                      lower52 = col_integer()),
+                     na = c("", "NA")
+    )
+} else {
+    data <- NA
+    print("Invalid data set identifier! Must be 'sygen' or 'emsci'.")
+}
 
 # remove patients with AIS E at baseline (as Sygen does not contain any
 # patients with AIS E)
@@ -79,8 +120,6 @@ data <- data %>%
 dim(data)
 data <- data %>%
     filter(level %in% c("cervical", "thoracic", NA))
-dim(data)
-
 dim(data) # Sygen: n = 797 | EMSCI: 4944 (5220 if AIS E and lumbar injury
 # ... at baseline are included)
 head(data)
@@ -221,19 +260,6 @@ cols.fac <- c("ais1", "splvl", "sexcd",
               "ais1_MCAR", "ais1_MAR", "ais1_MNAR", "level")
 data_missing[cols.fac] <- sapply(data_missing[cols.fac],
                                  as.factor)
-# data_missing$ais1_MNAR <- factor(data_missing$ais1_MNAR,
-#                                  levels = AIS_grades
-#                                  )
-
-
-## check classes of individual variables
-# sapply(data_missing, class)
-# # ... it appears that only the ais1_MNAR column "gets lost" as a factor
-# data_missing <- data_missing %>%
-#     mutate(ais1_MNAR = factor(ais1_MNAR,
-#                           levels = AIS_grades),
-#            lower01_MNAR = as.integer(lower01_MNAR),
-#            lower52_MNAR = as.integer(lower52_MNAR))
 
 # ------------------------------------------------------------------------------
 ## Sanity checks
@@ -271,6 +297,7 @@ plots_ais <- plot_imputation_results(results_data = result_imputation_ais[1][[1]
                                      var = 'ais1',
                                      patterns = c('MCAR', 'MAR', 'MNAR'),
                                      imp = c('case_deletion', 'majority', 'regression'))
+
 plots_ais[1]
 plots_ais[2]
 
