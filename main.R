@@ -12,10 +12,12 @@
 ################################################################################
 
 library(tidyverse)
+library(cowplot)
 library(finalfit)
 library(mice)
 library(nnet)
-library(ggpubr)
+# library(ggpubr)
+# library(data.table)
 
 set.seed(1)
 
@@ -46,7 +48,8 @@ data <- read_csv(paste(data_path,
                  na = c("", "NA"),
                  )
 
-# remove patients with AIS E at baseline
+# remove patients with AIS E at baseline (as Sygen does not contain any
+# patients with AIS E)
 dim(data)
 data <- data %>%
     filter(ais1 %in% c("A", "B", "C", "D", NA))
@@ -68,9 +71,18 @@ data <- data %>%
         grepl('L', splvl, fixed = TRUE) ~ "lumbar")
         ) %>%
     mutate(level = factor(level,
-                          levels = c("cervical", "thoracic", "lumbar")))
+                          levels = c("cervical", "thoracic", "lumbar"))
+           )
 
-dim(data) # Sygen: n = 797 | EMSCI: 5216 (5220 if AIS E at baseline is included)
+# remove patients with lumbar injury at baseline (as Sygen does not contain any
+# patients with AIS E)
+dim(data)
+data <- data %>%
+    filter(level %in% c("cervical", "thoracic", NA))
+dim(data)
+
+dim(data) # Sygen: n = 797 | EMSCI: 4944 (5220 if AIS E and lumbar injury
+# ... at baseline are included)
 head(data)
 
 ################################################################################
@@ -182,7 +194,8 @@ LEMS_by_AIS_distribution
 ################################################################################
 
 complete_cases <- data[complete.cases(data), ]
-dim(complete_cases) # Sygen: n = 546 | EMSCI: n = 1171
+dim(complete_cases) # Sygen: n = 546 | EMSCI: n = 1171 (if only AIS E is
+# excluded, o/w n = 1043 if also lumbar injuries are excluded)
 
 ## confirm that only complete cases are included
 # complete_cases %>%
@@ -198,23 +211,29 @@ data_missing <- introduce_missingness(data = complete_cases,
                                       prop = 0.3)
 
 ## integer-valued variables
-# cols.int <- c("age", "lower01", "lower01_MCAR", "lower01_MAR", "lower01_MNAR",
-#               "lower52", "lower52_MCAR", "lower52_MAR", "lower52_MNAR")
-# data_missing[cols.int] <- sapply(data_missing[cols.int],
-#                                  as.integer)
+cols.int <- c("age", "lower01", "lower01_MCAR", "lower01_MAR", "lower01_MNAR",
+              "lower52", "lower52_MCAR", "lower52_MAR", "lower52_MNAR")
+data_missing[cols.int] <- sapply(data_missing[cols.int],
+                                 as.integer)
 
 ## Factor variables
-# cols.fac <- c("ais1", "splvl", "sexcd",
-#               "ais1_MCAR", "ais1_MAR", "ais1_MNAR", "level")
-# data_missing[cols.fac] <- sapply(data_missing[cols.fac],
-#                                  as.factor)
+cols.fac <- c("ais1", "splvl", "sexcd",
+              "ais1_MCAR", "ais1_MAR", "ais1_MNAR", "level")
+data_missing[cols.fac] <- sapply(data_missing[cols.fac],
+                                 as.factor)
+# data_missing$ais1_MNAR <- factor(data_missing$ais1_MNAR,
+#                                  levels = AIS_grades
+#                                  )
+
 
 ## check classes of individual variables
-sapply(data_missing, class)
-# ... it appears that only the ais1_MNAR column "gets lost" as a factor
-data_missing <- data_missing %>%
-    mutate(ais1_MNAR = factor(ais1_MNAR,
-                          levels = AIS_grades))
+# sapply(data_missing, class)
+# # ... it appears that only the ais1_MNAR column "gets lost" as a factor
+# data_missing <- data_missing %>%
+#     mutate(ais1_MNAR = factor(ais1_MNAR,
+#                           levels = AIS_grades),
+#            lower01_MNAR = as.integer(lower01_MNAR),
+#            lower52_MNAR = as.integer(lower52_MNAR))
 
 # ------------------------------------------------------------------------------
 ## Sanity checks
@@ -232,7 +251,6 @@ sapply(data_missing, class)
 ################################################################################
 # Evaluate the effect of different imputation strategies
 ################################################################################
-
 result_imputation_ais <- result_imputations(data = data_missing,
                                             var = 'ais1',
                                             patterns = c('MCAR', 'MAR', 'MNAR'),
