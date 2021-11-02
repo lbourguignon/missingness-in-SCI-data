@@ -240,7 +240,7 @@ result_imputations <- function(data, var, patterns, imp){
     for (pat in patterns){
       data_temp <- prepare_df_lm(data_sub, var, pat, variables)
 
-      if (sapply(data_temp, typeof)[paste0(var, '_', pat)][[1]] == 'double'){
+      if (sapply(data_temp, typeof)[paste0(var, '_', pat)][[1]] == 'integer'){
         replaceby <- mean(data_temp[paste0(var, '_', pat)][[1]], na.rm = T)
       } else if (sapply(data_temp, typeof)[paste0(var, '_', pat)][[1]] == 'character'){
         replaceby <- tail(names(sort(table(data_temp[paste0(var, '_', pat)]))), 1)
@@ -268,7 +268,7 @@ result_imputations <- function(data, var, patterns, imp){
       data_temp_nooutcome_missing <- data_temp_nooutcome[is.na(data_temp_nooutcome[paste0(var, '_', pat)]),]
 
 
-      if (sapply(data_temp, typeof)[paste0(var, '_', pat)][[1]] == 'double'){
+      if (sapply(data_temp, typeof)[paste0(var, '_', pat)][[1]] == 'integer'){
         formula <- paste0(paste0(grep(var, variables, value=TRUE), '_', pat)," ~ .")
         model <- lm(formula, data = data_temp_nooutcome_complete)
       } else if (sapply(data_temp, typeof)[paste0(var, '_', pat)][[1]] == 'character'){
@@ -285,7 +285,7 @@ result_imputations <- function(data, var, patterns, imp){
       data_temp_nooutcome_imputed$index <- as.numeric(row.names(data_temp_nooutcome_imputed))
       data_temp_nooutcome_imputed <- data_temp_nooutcome_imputed[order(data_temp_nooutcome_imputed$index), ]
       if (var != 'lower52'){
-        data_temp_nooutcome_imputed$lower52 <- sygen_analysis_subset$lower52
+        data_temp_nooutcome_imputed$lower52 <- data$lower52 # prev.: sygen_analysis_subset$lower52
       }
       data_temp_nooutcome_imputed <- subset(data_temp_nooutcome_imputed, select = -c(index))
 
