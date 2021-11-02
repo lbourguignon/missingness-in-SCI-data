@@ -331,8 +331,25 @@ aisgrade_levelfactor <- function(col){
 # ------------------------------------------------------------------------------
 
 plot_imputation_results <- function(results_data, dist_data, var, patterns, imp){
+    #'
+    #'@param results_data data.frame containing predictors from lm w/ inferred
+    #   values and model type (baseline, combination of missing pattern and
+    #'  imputation method)
+    #'@param dist_data data.frame containing the complete cases, variables w/
+    #'  different patterns of missingness applied and results of different
+    #'  imputation schemes applied
+    #'@param var variable in which missingness was introduced (one of ais1,
+    #'  lower01, lower52)
+    #'@param patterns vector w/ patterns of missingness applied (one or multiple
+    #'  of MCAR, MAR, MNAR)
+    #'@param imp vector w/ imputation schemes applied (one or multiple of
+    #'  case_deletion, mean, regression)
 
   if (levels(factor(results_data$model))[1] != 'baseline'){
+    # LL: not entirely sure if this is required? it seems to achieve
+    #     that b"baseline" is the first level in factor, which should however not
+    #     make much of a difference if it is not an ordered factor?
+    # LL: purpose understood after going through entire plotting function
     reduced_levels <- levels(factor(results_data$model))[levels(factor(results_data$model)) != 'baseline']
     results_data$model <- factor(results_data$model,
                                  levels = c("baseline", reduced_levels))
@@ -412,13 +429,30 @@ plot_AIS_distribution <- function(dist_data, missing, col){
 
   subset_ais$ID <- seq.int(nrow(subset_ais)[1])
 
-  long_ais <- melt(subset_ais,
-                   id.vars = "ID",
-                   variable.name = "AIS")
+  # long_ais <- melt(as.data.table(subset_ais),
+  #                  id.vars = "ID",
+  #                  variable.name = "AIS") # %>% as_tibble()
+  long_ais_tidy <- subset_ais %>%
+      pivot_longer(starts_with("ais1"),
+                   names_to = "scenario",
+                   values_to = "AIS")
 
-  plot <- ggplot(long_ais, aes(value, fill=AIS)) +
+
+  plot <- ggplot(long_ais_tidy, aes(AIS, fill=scenario)) +
     geom_bar(position = "dodge") +
-    scale_fill_manual(values=col)
+    scale_fill_manual(values = col,
+                      labels = c("data",
+                                 missing,
+                                 paste0(missing, " + mean/majority"),
+                                 paste0(missing, " + regression"))
+                      ) +
+      ylab("") +
+      xlab("AIS grade") +
+      theme(legend.position = c(1, 1),
+            legend.justification = c(1, 1),
+            legend.title = element_blank(),
+            legend.text  = element_text(size = 6),
+            legend.key.size = unit(.75, "lines"))
 
   return (plot)
 }
