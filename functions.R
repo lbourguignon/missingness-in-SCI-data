@@ -379,6 +379,8 @@ plot_imputation_results <- function(results_data, dist_data, var, patterns, imp)
         geom_point(aes(x = coef, y = variables, colour = model, shape = model)) +
         scale_shape_manual(values = shapes) +
         scale_colour_manual(values = cbPalette) +
+        guides(col = guide_legend(ncol = 2),
+               shape = guide_legend(ncol = 2)) +
         theme(legend.title = element_blank(),
               legend.position = "top",
               # legend.justification = c(1, 1),
