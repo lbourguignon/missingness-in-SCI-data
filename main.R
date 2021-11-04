@@ -20,7 +20,7 @@ library(nnet)
 set.seed(1)
 
 # which data set?
-data.set <- "emsci" # sygen or emsci
+data.set <- "sygen" # sygen or emsci
 
 # path to remote storage (if mounted under MacOS)
 data_path = "/Volumes/borgwardt/Data/SCI/"
@@ -277,6 +277,14 @@ sapply(data_missing, class)
 ################################################################################
 # Evaluate the effect of different imputation strategies
 ################################################################################
+if (data.set == "sygen") {
+    # save_path <- paste(data_path, "Sygen/", sep = "")
+    save_path <- "~/Desktop/"
+} else if (data.set == "emsci") {
+    # save_path <- paste(data_path, "EMSCI/", sep = "")
+    save_path <- "~/Desktop/"
+}
+
 result_imputation_ais <- result_imputations(data = data_missing,
                                             var = 'ais1',
                                             patterns = c('MCAR', 'MAR', 'MNAR'),
@@ -298,22 +306,51 @@ plots_ais <- plot_imputation_results(results_data = result_imputation_ais[1][[1]
                                      patterns = c('MCAR', 'MAR', 'MNAR'),
                                      imp = c('case_deletion', 'majority', 'regression'))
 
-plots_ais[1]
-plots_ais[2]
+plots_ais[[1]]
+add_joint_title(plots_ais[[1]],
+                paste(toupper(data.set), ": missingness in AIS, week 1", sep = ""))
+ggsave(paste(save_path, data.set, "_AIS-week-1_coefficients.pdf", sep = ""),
+       height = 20, width = 20, units = "cm",
+       device = "pdf")
+plots_ais[[2]]
+add_joint_title(plots_ais[[2]],
+                paste(toupper(data.set), ": missingness in AIS, week 1", sep = ""))
+ggsave(paste(save_path, data.set, "_AIS-week-1_pvalues.pdf", sep = ""),
+       height = 20, width = 20, units = "cm",
+       device = "pdf")
 
 plots_lems01 <- plot_imputation_results(results_data = result_imputation_lems01[1][[1]],
                                         dist_data = result_imputation_lems01[2][[1]],
                                         var = 'lower01',
                                         patterns = c('MCAR', 'MAR', 'MNAR'),
                                         imp = c('case_deletion', 'mean', 'regression'))
-plots_lems01[1]
-plots_lems01[2]
-
+plots_lems01[[1]]
+add_joint_title(plots_lems01[[1]],
+                paste(toupper(data.set), ": missingness in LEMS, week 1", sep = ""))
+ggsave(paste(save_path, data.set, "_LEMS-week-1_coefficients.pdf", sep = ""),
+       height = 20, width = 20, units = "cm",
+       device = "pdf")
+plots_lems01[[2]]
+add_joint_title(plots_lems01[[2]],
+                paste(toupper(data.set), ": missingness in LEMS, week 1", sep = ""))
+ggsave(paste(save_path, data.set, "_LEMS-week-1_pvalues.pdf", sep = ""),
+       height = 20, width = 20, units = "cm",
+       device = "pdf")
 
 plots_lems52 <- plot_imputation_results(results_data = result_imputation_lems52[1][[1]],
                                         dist_data = result_imputation_lems52[2][[1]],
                                         var = 'lower52',
                                         patterns = c('MCAR', 'MAR', 'MNAR'),
                                         imp = c('case_deletion', 'mean', 'regression'))
-plots_lems52[1]
-plots_lems52[2]
+plots_lems52[[1]]
+add_joint_title(plots_lems52[[1]],
+                paste(toupper(data.set), ": missingness in LEMS, week 52", sep = ""))
+ggsave(paste(save_path, data.set, "_LEMS-week-52_coefficients.pdf", sep = ""),
+       height = 20, width = 20, units = "cm",
+       device = "pdf")
+plots_lems52[[2]]
+add_joint_title(plots_lems52[[2]],
+                paste(toupper(data.set), ": missingness in LEMS, week 52", sep = ""))
+ggsave(paste(save_path, data.set, "_LEMS-week-52_pvalues.pdf", sep = ""),
+       height = 20, width = 20, units = "cm",
+       device = "pdf")
