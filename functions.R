@@ -382,8 +382,8 @@ plot_imputation_results <- function(results_data, dist_data, var, patterns, imp)
         guides(col = guide_legend(ncol = 2),
                shape = guide_legend(ncol = 2)) +
         theme(legend.title = element_blank(),
-              legend.position = "top",
-              # legend.justification = c(1, 1),
+              legend.position = "bottom",
+              legend.justification = "center", # c(5, 1)
               legend.text  = element_text(size = 6),
               legend.key.size = unit(.75, "lines"))
     main_plots[["pvalues"]] <- ggplot(results_data) +
@@ -391,9 +391,11 @@ plot_imputation_results <- function(results_data, dist_data, var, patterns, imp)
         scale_shape_manual(values = shapes) +
         geom_vline(xintercept = log(0.05)) +
         scale_colour_manual(values = cbPalette) +
+        guides(col = guide_legend(ncol = 2),
+               shape = guide_legend(ncol = 2)) +
         theme(legend.title = element_blank(),
-              legend.position = "top",
-              # legend.justification = c(0.1, 0.1),
+              legend.position = "bottom",
+              legend.justification = "center", # c(0.1, 0.1)
               legend.text  = element_text(size = 6),
               legend.key.size = unit(.75, "lines"))
 
@@ -491,4 +493,23 @@ plot_lems52_distribution <- function(dist_data, missing, col){
       theme(legend.position = "none")
 
   return (plot)
+}
+
+#
+
+# ------------------------------------------------------------------------------
+add_joint_title <- function(aggregate_plot, title) {
+    plot_title <- ggdraw() +
+        draw_label(title,
+                   fontface = 'bold',
+                   x = 0,
+                   hjust = 0) +
+        theme(
+            plot.margin = margin(0, 0, 0, 7) # aligns joint title at the left
+        )
+    plot_with_title <- plot_grid(plot_title, aggregate_plot,
+                                 ncol = 1,
+                                 rel_heights = c(0.1, 1)
+                                 )
+    return (plot_with_title)
 }
