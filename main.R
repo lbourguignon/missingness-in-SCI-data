@@ -23,7 +23,7 @@ set.seed(1)
 data.set <- "sygen" # sygen or emsci
 
 # path to remote storage (if mounted under MacOS)
-data_path = "/Volumes/borgwardt/Data/SCI/"
+path.to.data = "/Volumes/borgwardt/Data/SCI/"
 
 ################################################################################
 # Data loading
@@ -34,7 +34,7 @@ if (data.set == "sygen") {
                       paste(rep("T0", 9), 1:9, sep = ""),
                       paste(rep("T", 3), 10:12, sep = ""))
     AIS_grades <- c("AIS A", "AIS B", "AIS C", "AIS D")
-    data <- read_csv(paste(data_path,
+    data <- read_csv(paste(path.to.data,
                            "Sygen/JohnKramersProject_DATA_2019-10-07_0111.csv",
                            sep = ""),
                      col_types = list(ptid =  col_character(),
@@ -65,11 +65,11 @@ if (data.set == "sygen") {
         )
 } else if (data.set == "emsci") {
     injury_levels <- c(paste(rep("C", 8), 1:8, sep = ""),
-                      paste(rep("T", 10), 1:10, sep = ""),
+                      paste(rep("T", 12), 1:12, sep = ""),
                       paste(rep("L", 5), 1:5, sep = ""),
                       paste(rep("S", 5), 1:5, sep = ""))
     AIS_grades <- c("A", "B", "C", "D", "E")
-    data <- read_csv(paste(data_path,
+    data <- read_csv(paste(path.to.data,
                            "EMSCI/emsci_data_sygen_format.csv",
                            # "Sygen/JohnKramersProject_DATA_2019-10-07_0111.csv",
                            sep = ""),
@@ -82,7 +82,8 @@ if (data.set == "sygen") {
                                       ais1 = col_factor(levels = AIS_grades),
                                       lower01 = col_integer(),
                                       lower52 = col_integer()),
-                     na = c("", "NA")
+                     na = c("", "NA", "INT") # INT - intermediate; cannot be
+                     # resolved to NLI with information contained in EMSCI?
     )
 } else {
     data <- NA
@@ -278,10 +279,10 @@ sapply(data_missing, class)
 # Evaluate the effect of different imputation strategies
 ################################################################################
 if (data.set == "sygen") {
-    # save_path <- paste(data_path, "Sygen/", sep = "")
+    # save_path <- paste(path.to.data, "Sygen/", sep = "")
     save_path <- "~/Desktop/"
 } else if (data.set == "emsci") {
-    # save_path <- paste(data_path, "EMSCI/", sep = "")
+    # save_path <- paste(path.to.data, "EMSCI/", sep = "")
     save_path <- "~/Desktop/"
 }
 
