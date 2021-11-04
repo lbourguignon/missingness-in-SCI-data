@@ -247,7 +247,7 @@ sygen_ais_overtime %>%
 vis_miss(sygen_ais_overtime)
 
 # LEMS and AIS grade dataframe + VAC and DAP
-sygen_lems_ais_overtime <- subset_col(c(vec_lems, vec_ais,
+sygen_ais_lems_overtime <- subset_col(c(vec_lems, vec_ais,
                                         'vaccd01', 'anyana01'), sygen)
 
 # -------------------------
@@ -311,7 +311,7 @@ ggplot(sygen_ais_lems_overtime, aes(lower01, lower52)) +
 
 # Add information about severity grade at week 01 to the binarised lems dataframe
 sygen_lems_overtime_binary_ais1 <- sygen_lems_overtime_binary
-sygen_lems_overtime_binary_ais1$ais1 <- sygen_raw$ais1
+sygen_lems_overtime_binary_ais1$ais1 <- sygen$ais1
 
 # Transform lems info overtime to patterns representing sequence of LEMS measurements
 # e.g. 0-1-1-1-1-1 means LEMS is missing at week 01 but present for all following time points
