@@ -2,9 +2,9 @@
 # SCI - Handling missing data project
 # L. Bourguignon & L.P. Lukas
 # First version : 31.10.2021
-# Last update : 31.10.2021
+# Last update : 05.11.2021
 # ------------------------------------------------------------------------------
-# VISUALE EXPLORATION
+# VISUAL EXPLORATION
 ################################################################################
 
 library(tidyverse)
@@ -20,7 +20,6 @@ path.to.data = "/Volumes/borgwardt/Data/SCI/"
 ################################################################################
 # Data loading
 ################################################################################
-
 if (data.set == "sygen") {
     injury_levels  <-  c(paste(rep("C0", 8), 1:8, sep = ""),
                          paste(rep("T0", 9), 1:9, sep = ""),
@@ -77,6 +76,8 @@ if (data.set == "sygen") {
                      na = c("", "NA", "INT") # INT - intermediate; cannot be
                      # resolved to NLI with information contained in EMSCI?
     )
+    data <- data %>%
+        filter(ais1 %in% c("A", "B", "C", "D", NA))
 } else {
     data <- NA
     print("Invalid data set identifier! Must be 'sygen' or 'emsci'.")
@@ -100,35 +101,59 @@ data <- data %>%
 # reference for interpretation of the following plot:
 # https://cran.r-project.org/web/packages/finalfit/vignettes/missing.html
 missing_dist <- data %>%
-  missing_pairs("lower52", c("age", "sexcd", "level", "lower01", "ais1"))
+  missing_pairs(dependent = "lower52",
+                explanatory = c("age", "sexcd", "level", "lower01", "ais1"),
+                title = paste(toupper(data.set), " - missing data", sep = ""))
 missing_dist_fill <- data %>%
-  missing_pairs("lower52", c("age", "sexcd", "level", "lower01", "ais1"),
-                position = "fill", )
+  missing_pairs(dependent = "lower52",
+                explanatory = c("age", "sexcd", "level", "lower01", "ais1"),
+                position = "fill",
+                title = paste(toupper(data.set), " - missing data", sep = ""))
 # x-axis represent patients, light blue = NA
 missing_heatmap <- data %>%
-  missing_plot()
+  missing_plot(title = paste(toupper(data.set), " - missing data", sep = ""))
 
 # ------------------------------------------------------------------------------
 
 ## Visualise the distributions of the different variables at baseline
 # AIS grade
-ais1.dist <- ggplot(data, aes(ais1)) + geom_bar()
+ais1.dist <- ggplot(data, aes(ais1)) +
+    geom_bar() +
+    labs(title = paste("AIS grades at week 1 (", toupper(data.set), ")",
+                       sep = ""))
 # Age
-age.dist <- ggplot(data, aes(x=age)) +
-  geom_histogram(aes(y=..density..), colour="black", fill="white")+
-  geom_density(alpha=.2, fill="#FF6666")
+age.dist <- ggplot(data, aes(x = age)) +
+    geom_histogram(aes(y=..density..), bins = 100,
+                   colour = "black", fill = "white") +
+    geom_density(alpha = .2, fill = "#FF6666") +
+    xlim(0, 100) +
+    labs(title = paste("Age at injury (", toupper(data.set), ")", sep = ""))
 # Sex
-sex.dist <- ggplot(data, aes(factor(sexcd))) + geom_bar() +
-  scale_x_discrete(labels=c("1" = "Female", "2" = "Male"), name = 'Sex')
+sex.dist <- ggplot(data, aes(factor(sexcd))) +
+    geom_bar() +
+    scale_x_discrete(labels = c("1" = "Female", "2" = "Male"), name = 'Sex') +
+    labs(title = paste("Sex (", toupper(data.set), ")", sep = ""))
 # LEMS at week 01
-lems01.dist <- ggplot(data, aes(x=lower01)) +
-    geom_density(alpha=.2, fill="#FF6666") + xlim(0,50)
+lems01.dist <- ggplot(data) +
+    geom_density(aes(x = lower01, y = ..scaled..),
+                 alpha = .2, fill = "#FF6666") +
+    xlim(0, 50) +
+    labs(title = paste("LEMS at week 1 (", toupper(data.set), ")", sep = "")) +
+    ylab("Density (scaled)")
 # LEMS at week 52
-lems52.dist <- ggplot(data, aes(x=lower52)) +
-    geom_density(alpha=.2, fill="#FF6666") + xlim(0,50)
+lems52.dist <- ggplot(data) +
+    geom_density(aes(x = lower52, y = ..scaled..),
+                 alpha = .2, fill = "#FF6666") +
+    xlim(0,50) +
+    labs(title = paste("LEMS at week 52 (", toupper(data.set), ")", sep = "")) +
+    ylab("Density (scaled)")
 # Level of injury
-nli.dist <- ggplot(data, aes(splvl)) + geom_bar() +
-  scale_x_discrete(name = 'NLI')
+nli.dist <- ggplot(data, aes(splvl)) +
+    geom_bar() +
+    scale_x_discrete(name = 'NLI') +
+    labs(title = paste("Neurological level of injury (", toupper(data.set), ")",
+                       sep = "")) +
+    theme(axis.title.y = element_blank())
 
 # Variables stratified by AIS grade
 #ggplot(sygen_analysis, aes(x=lower01, fill=ais1)) + geom_density(alpha=.3)+ xlim(0,50)
@@ -138,12 +163,23 @@ nli.dist <- ggplot(data, aes(splvl)) + geom_bar() +
 #ggplot(sygen_analysis, aes(x=splvl, fill=ais1)) + geom_histogram(stat="count")
 
 # Relationship between LEMS at week 01 and week 52, coloured by AIS grade
-LEMS.by.AIS <- ggplot(data, aes(lower01, lower52, colour=ais1)) +
-  geom_jitter(width = 2, height = 2) +
-  xlim(-2,50) +
-  ylim(-2,50)
+lems.by.ais <- ggplot(data, aes(lower01, lower52, colour = ais1)) +
+    geom_jitter(width = 2, height = 2,
+                alpha = .5, stroke = 1) +
+    xlim(-2,50) + ylim(-2,50) +
+    xlab("LEMS (week 1)") + ylab("LEMS (week 52)") +
+    labs(title = paste("Change in LEMS (", toupper(data.set), ")", sep = ""),
+         color = "AIS (week 1)") +
+    guides(col = guide_legend(ncol = 2)) +
+    theme(legend.position = c(.9, .25),
+          legend.justification = "center", # c(5, 1)
+    )
 
 # Change in LEMS distribution over time, by AIS grade
+ais.counts <- data %>%
+    group_by(ais1) %>%
+    count() %>%
+    mutate(n = paste("n = ", n, sep = ""))
 lems01.by.AIS <- ggplot(data) +
     geom_density(aes(x=lower01, y=..scaled..), # use ..scaled.. for better
                  alpha=.2, fill="#FF6666") + # comparability between AIS grades
@@ -151,11 +187,10 @@ lems01.by.AIS <- ggplot(data) +
     ylim(0, 1.1) +
     xlab("LEMS (week 1)") +
     ylab("Density (scaled)") +
-    facet_grid(rows = vars(ais1), scales = 'fixed')
-ais.counts <- data %>%
-    group_by(ais1) %>%
-    count() %>%
-    mutate(n = paste("n = ", n, sep = ""))
+    facet_grid(rows = vars(ais1), scales = 'fixed') +
+    geom_text(data = ais.counts,
+              mapping = aes(x = 25, y = .975, label = n),
+    )
 lems52.by.AIS <- ggplot(data) +
     geom_density(aes(x=lower52, y=..scaled..),
                  alpha=.2, fill="#FF6666") +
@@ -163,9 +198,6 @@ lems52.by.AIS <- ggplot(data) +
     ylim(0, 1.1) +
     xlab("LEMS (week 52)") +
     facet_grid(rows = vars(ais1), scales = 'fixed') +
-    geom_text(data = ais.counts,
-              mapping = aes(x = 25, y = .975, label = n),
-              ) +
     theme(axis.title.y = element_blank()) # remove y-axis label
 lems.by.AIS.dist <- plot_grid(lems01.by.AIS,
                               lems52.by.AIS,
