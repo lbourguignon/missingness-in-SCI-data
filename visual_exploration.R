@@ -73,7 +73,7 @@ if (data.set == "sygen") {
                                       ais1 = col_factor(levels = AIS_grades),
                                       lower01 = col_integer(),
                                       lower52 = col_integer()),
-                     na = c("", "NA", "INT") # INT - intermediate; cannot be
+                     na = c("", "NA", "INT", "NT") # INT - intermediate; cannot be
                      # resolved to NLI with information contained in EMSCI?
     )
     data <- data %>%
@@ -118,9 +118,35 @@ missing_heatmap <- data %>%
 ## Visualise the distributions of the different variables at baseline
 # AIS grade
 ais1.dist <- ggplot(data, aes(ais1)) +
-    geom_bar() +
+    geom_bar(fill = "#2EB62C") +
     labs(title = paste("AIS grades at week 1 (", toupper(data.set), ")",
-                       sep = ""))
+                       sep = "")) +
+    scale_y_continuous(expand = c(0, 0), limits = c(0, 2750)) +
+    theme_classic() +
+    theme(axis.title.y = element_blank(),
+          axis.title.x = element_blank())
+if (save.plots) {
+    ggsave(paste("~/Desktop/", toupper(data.set), "-AIS-wk1.pdf", sep = ""),
+           plot = ais1.dist,
+           width = 15, height = 20, units = "cm",
+           device = "pdf")
+}
+ais1.dist.no.NA <- data %>%
+    filter(!is.na(ais1)) %>%
+    ggplot(aes(ais1)) +
+    geom_bar(fill = "#2EB62C") +
+    labs(title = paste("AIS grades at week 1 (", toupper(data.set), ")",
+                       sep = "")) +
+    scale_y_continuous(expand = c(0, 0), limits = c(0, 2750)) +
+    theme_classic() +
+    theme(axis.title.y = element_blank(),
+          axis.title.x = element_blank())
+if (save.plots) {
+    ggsave(paste("~/Desktop/", toupper(data.set), "-AIS-wk1-no-NA.pdf", sep = ""),
+           plot = ais1.dist.no.NA,
+           width = 15, height = 20, units = "cm",
+           device = "pdf")
+}
 # Age
 age.dist <- ggplot(data, aes(x = age)) +
     geom_histogram(aes(y=..density..), bins = 100,
@@ -148,12 +174,36 @@ lems52.dist <- ggplot(data) +
     labs(title = paste("LEMS at week 52 (", toupper(data.set), ")", sep = "")) +
     ylab("Density (scaled)")
 # Level of injury
-nli.dist <- ggplot(data, aes(splvl)) +
-    geom_bar() +
-    scale_x_discrete(name = 'NLI') +
+nli.dist <- ggplot(data, aes(level)) +
+    geom_bar(fill = "#2EB62C") +
     labs(title = paste("Neurological level of injury (", toupper(data.set), ")",
                        sep = "")) +
-    theme(axis.title.y = element_blank())
+    scale_y_continuous(expand = c(0, 0), limits = c(0, 2750)) +
+    theme_classic() +
+    theme(axis.title.y = element_blank(),
+          axis.title.x = element_blank())
+if (save.plots) {
+    ggsave(paste("~/Desktop/", toupper(data.set), "-NLI.pdf", sep = ""),
+           plot = nli.dist,
+           width = 15, height = 20, units = "cm",
+           device = "pdf")
+}
+nli.dist.no.NA <- data %>%
+    filter(!is.na(level)) %>%
+    ggplot(aes(level)) +
+    geom_bar(fill = "#2EB62C") +
+    labs(title = paste("Neurological level of injury (", toupper(data.set), ")",
+                       sep = "")) +
+    scale_y_continuous(expand = c(0, 0), limits = c(0, 2750)) +
+    theme_classic() +
+    theme(axis.title.y = element_blank(),
+          axis.title.x = element_blank())
+if (save.plots) {
+    ggsave(paste("~/Desktop/", toupper(data.set), "-NLI-no-NA.pdf", sep = ""),
+           plot = nli.dist.no.NA,
+           width = 15, height = 20, units = "cm",
+           device = "pdf")
+}
 
 # Variables stratified by AIS grade
 #ggplot(sygen_analysis, aes(x=lower01, fill=ais1)) + geom_density(alpha=.3)+ xlim(0,50)
@@ -202,7 +252,13 @@ lems52.by.AIS <- ggplot(data) +
 lems.by.AIS.dist <- plot_grid(lems01.by.AIS,
                               lems52.by.AIS,
                               ncol = 2, nrow = 1)
-lems.by.AIS.dist
+# lems.by.AIS.dist
+if (save.plots) {
+    ggsave(paste("~/Desktop/", toupper(data.set), "-LEMS-1-52-by-AIS.pdf", sep = ""),
+           plot = lems.by.AIS.dist,
+           width = 40, height = 20, units = "cm",
+           device = "pdf")
+}
 # ------------------------------------------------------------------------------
 ## Visualise the co-occurrence of missingness (ONLY Sygen)
 # previous visualisations worked w/ smaller subset of variables; EMSCI only
