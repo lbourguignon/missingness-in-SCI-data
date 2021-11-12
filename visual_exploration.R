@@ -16,6 +16,7 @@ source("functions.R")
 
 data.set <- "emsci" # one of: sygen, emsci
 path.to.data = "/Volumes/borgwardt/Data/SCI/"
+save.plots <- TRUE
 
 ################################################################################
 # Data loading
@@ -62,7 +63,6 @@ if (data.set == "sygen") {
     AIS_grades <- c("A", "B", "C", "D", "E")
     data <- read_csv(paste(path.to.data,
                            "EMSCI/emsci_data_sygen_format.csv",
-                           # "Sygen/JohnKramersProject_DATA_2019-10-07_0111.csv",
                            sep = ""),
                      col_types = list(ptid =  col_integer(),
                                       age = col_integer(),
