@@ -515,7 +515,7 @@ add_joint_title <- function(aggregate_plot, title) {
 }
 
 plot.bar <- function(data, variable, y.type, include.NA = TRUE,
-                     title, fill = "#2EB62C"){
+                     title, fill = "#006F62"){
     # plot bar chart (either counts or proportions)
     # (see https://dplyr.tidyverse.org/articles/programming.html#indirection-2
     #  for how variable argument is handled)
@@ -547,11 +547,11 @@ plot.bar <- function(data, variable, y.type, include.NA = TRUE,
     # set up plot
     plot <- ggplot(data)
     if (y.type == "count") plot <- plot + geom_bar(mapping = aes(x = .data[[variable]]),
-                                                   fill = fill)
+                                                   fill = fill, width = 0.5)
     else plot <-  plot + geom_bar(mapping = aes(x = .data[[variable]],
                                                 y = ..prop..,
                                                 group = 1),
-                                  fill = fill)
+                                  fill = fill, width = 0.5)
     # style plot
     if (y.type == "count") plot <- plot +  scale_y_continuous(expand = c(0, 0),
                                                               limits = c(0, y.max))

@@ -113,7 +113,7 @@ if (save.plots) {
 ais1.dist.no.NA <- plot.bar(data, "ais1", "count", include.NA = FALSE,
                             title = paste("AIS grades at week 1 (",
                                           toupper(data.set), ")", sep = ""))
-ais.1.dist.no.NA.prop <- plot.bar(data, "ais1", "count", include.NA = FALSE,
+ais1.dist.no.NA.prop <- plot.bar(data, "ais1", "prop", include.NA = FALSE,
                                   title = paste("AIS grades at week 1 (",
                                                 toupper(data.set), ")", sep = ""))
 if (save.plots) {
@@ -123,12 +123,30 @@ if (save.plots) {
            device = "pdf")
 }
 # Age
+age.vec <- data %>%
+    filter(!is.na(age)) %>%
+    pull(age)
+# table() provides a count for every age -- find the maximum value as this
+# corresponds to the maximum density value and divide by number of patients with
+# age information
+max.density <- max(table(age.vec))/length(age.vec)
+# Find maximum of df$values
+max.count <- max(table(age.vec))
+scale.factor <- max.density / max.count
 age.dist <- ggplot(data, aes(x = age)) +
-    geom_histogram(aes(y=..density..), bins = 100,
-                   colour = "black", fill = "white") +
-    geom_density(alpha = .2, fill = "#FF6666") +
+    geom_histogram(aes(y=..density..), binwidth = 1,
+                   colour = "#FFFFFF", fill = "#006F62", alpha = 0.5) +
+    stat_density(geom = "line") +
     xlim(0, 100) +
-    labs(title = paste("Age at injury (", toupper(data.set), ")", sep = ""))
+    scale_y_continuous(expand = c(0, 0),
+                       sec.axis = sec_axis(trans = ~(. / scale.factor),
+                                           name = "Counts")) +
+    ylab("Density") +
+    labs(title = paste("Age at injury (", toupper(data.set), ")", sep = ""))+
+    theme_classic() +
+    theme(axis.title.x = element_blank(),
+          axis.title.y.right = element_text(color = "#006F62",
+                                            angle = 90))
 # Sex
 sex.dist <- plot.bar(data, "sexcd", "count",
                      title = paste("Sex (", toupper(data.set), ")", sep = "")) +
@@ -139,17 +157,23 @@ sex.dist.prop <- plot.bar(data, "sexcd", "prop",
 # LEMS at week 01
 lems01.dist <- ggplot(data) +
     geom_density(aes(x = lower01, y = ..scaled..),
-                 alpha = .2, fill = "#FF6666") +
+                 alpha = .5, fill = "#006F62") +
     xlim(0, 50) +
+    scale_y_continuous(expand = c(0, 0)) +
     labs(title = paste("LEMS at week 1 (", toupper(data.set), ")", sep = "")) +
-    ylab("Density (scaled)")
+    ylab("Density (scaled)") +
+    xlab("LEMS") +
+    theme_classic()
 # LEMS at week 52
 lems52.dist <- ggplot(data) +
     geom_density(aes(x = lower52, y = ..scaled..),
-                 alpha = .2, fill = "#FF6666") +
-    xlim(0,50) +
+                 alpha = .5, fill = "#006F62") +
+    xlim(0, 50) +
+    scale_y_continuous(expand = c(0, 0)) +
     labs(title = paste("LEMS at week 52 (", toupper(data.set), ")", sep = "")) +
-    ylab("Density (scaled)")
+    ylab("Density (scaled)") +
+    xlab("LEMS") +
+    theme_classic()
 # Level of injury
 nli.dist <- plot.bar(data, "splvl", "count",
                      title = paste("Neurological level of injury (",
@@ -197,23 +221,29 @@ ais.counts <- data %>%
     mutate(n = paste("n = ", n, sep = ""))
 lems01.by.AIS <- ggplot(data) +
     geom_density(aes(x=lower01, y=..scaled..), # use ..scaled.. for better
-                 alpha=.2, fill="#FF6666") + # comparability between AIS grades
+                 alpha=.5, fill="#006F62") + # comparability between AIS grades
     xlim(-1, 50) +
-    ylim(0, 1.1) +
     xlab("LEMS (week 1)") +
     ylab("Density (scaled)") +
+    scale_y_continuous(expand = c(0, 0),
+                       limits = c(0, 1.1)) +
     facet_grid(rows = vars(ais1), scales = 'fixed') +
     geom_text(data = ais.counts,
               mapping = aes(x = 25, y = .975, label = n),
-    )
+    ) +
+    theme_classic() +
+    theme(panel.spacing = unit(2, "lines"))
 lems52.by.AIS <- ggplot(data) +
     geom_density(aes(x=lower52, y=..scaled..),
-                 alpha=.2, fill="#FF6666") +
+                 alpha=.5, fill="#006F62") +
     xlim(-1, 50) +
-    ylim(0, 1.1) +
     xlab("LEMS (week 52)") +
+    scale_y_continuous(expand = c(0, 0),
+                       limits = c(0, 1.1)) +
     facet_grid(rows = vars(ais1), scales = 'fixed') +
-    theme(axis.title.y = element_blank()) # remove y-axis label
+    theme_classic() +
+    theme(axis.title.y = element_blank(), # remove y-axis label
+          panel.spacing = unit(2, "lines"))
 lems.by.AIS.dist <- plot_grid(lems01.by.AIS,
                               lems52.by.AIS,
                               ncol = 2, nrow = 1)
