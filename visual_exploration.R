@@ -2,7 +2,7 @@
 # SCI - Handling missing data project
 # L. Bourguignon & L.P. Lukas
 # First version : 31.10.2021
-# Last update : 05.11.2021
+# Last update : 12.11.2021
 # ------------------------------------------------------------------------------
 # VISUAL EXPLORATION
 ################################################################################
@@ -16,7 +16,7 @@ source("functions.R")
 
 data.set <- "emsci" # one of: sygen, emsci
 path.to.data = "/Volumes/borgwardt/Data/SCI/"
-save.plots <- TRUE
+save.plots <- FALSE
 
 ################################################################################
 # Data loading
@@ -96,51 +96,26 @@ data <- data %>%
 ################################################################################
 # Visualise raw data
 ################################################################################
-
-## Visualise original missingness patterns
-# reference for interpretation of the following plot:
-# https://cran.r-project.org/web/packages/finalfit/vignettes/missing.html
-missing_dist <- data %>%
-  missing_pairs(dependent = "lower52",
-                explanatory = c("age", "sexcd", "level", "lower01", "ais1"),
-                title = paste(toupper(data.set), " - missing data", sep = ""))
-missing_dist_fill <- data %>%
-  missing_pairs(dependent = "lower52",
-                explanatory = c("age", "sexcd", "level", "lower01", "ais1"),
-                position = "fill",
-                title = paste(toupper(data.set), " - missing data", sep = ""))
-# x-axis represent patients, light blue = NA
-missing_heatmap <- data %>%
-  missing_plot(title = paste(toupper(data.set), " - missing data", sep = ""))
-
-# ------------------------------------------------------------------------------
-
-## Visualise the distributions of the different variables at baseline
+# Visualise the distributions of the different variables at baseline
 # AIS grade
-ais1.dist <- ggplot(data, aes(ais1)) +
-    geom_bar(fill = "#2EB62C") +
-    labs(title = paste("AIS grades at week 1 (", toupper(data.set), ")",
-                       sep = "")) +
-    scale_y_continuous(expand = c(0, 0), limits = c(0, 2750)) +
-    theme_classic() +
-    theme(axis.title.y = element_blank(),
-          axis.title.x = element_blank())
+ais1.dist <- plot.bar(data, "ais1", "count",
+                      title = paste("AIS grades at week 1 (",
+                                    toupper(data.set), ")", sep = ""))
+ais1.dist.prop <- plot.bar(data, "ais1", "prop",
+                           title = paste("AIS grades at week 1 (",
+                                         toupper(data.set), ")", sep = ""))
 if (save.plots) {
     ggsave(paste("~/Desktop/", toupper(data.set), "-AIS-wk1.pdf", sep = ""),
            plot = ais1.dist,
            width = 15, height = 20, units = "cm",
            device = "pdf")
 }
-ais1.dist.no.NA <- data %>%
-    filter(!is.na(ais1)) %>%
-    ggplot(aes(ais1)) +
-    geom_bar(fill = "#2EB62C") +
-    labs(title = paste("AIS grades at week 1 (", toupper(data.set), ")",
-                       sep = "")) +
-    scale_y_continuous(expand = c(0, 0), limits = c(0, 2750)) +
-    theme_classic() +
-    theme(axis.title.y = element_blank(),
-          axis.title.x = element_blank())
+ais1.dist.no.NA <- plot.bar(data, "ais1", "count", include.NA = FALSE,
+                            title = paste("AIS grades at week 1 (",
+                                          toupper(data.set), ")", sep = ""))
+ais.1.dist.no.NA.prop <- plot.bar(data, "ais1", "count", include.NA = FALSE,
+                                  title = paste("AIS grades at week 1 (",
+                                                toupper(data.set), ")", sep = ""))
 if (save.plots) {
     ggsave(paste("~/Desktop/", toupper(data.set), "-AIS-wk1-no-NA.pdf", sep = ""),
            plot = ais1.dist.no.NA,
@@ -155,10 +130,12 @@ age.dist <- ggplot(data, aes(x = age)) +
     xlim(0, 100) +
     labs(title = paste("Age at injury (", toupper(data.set), ")", sep = ""))
 # Sex
-sex.dist <- ggplot(data, aes(factor(sexcd))) +
-    geom_bar() +
-    scale_x_discrete(labels = c("1" = "Female", "2" = "Male"), name = 'Sex') +
-    labs(title = paste("Sex (", toupper(data.set), ")", sep = ""))
+sex.dist <- plot.bar(data, "sexcd", "count",
+                     title = paste("Sex (", toupper(data.set), ")", sep = "")) +
+    scale_x_discrete(labels = c("1" = "Female", "2" = "Male"), name = 'Sex')
+sex.dist.prop <- plot.bar(data, "sexcd", "prop",
+                          title = paste("Sex (", toupper(data.set), ")", sep = "")) +
+    scale_x_discrete(labels = c("1" = "Female", "2" = "Male"), name = 'Sex')
 # LEMS at week 01
 lems01.dist <- ggplot(data) +
     geom_density(aes(x = lower01, y = ..scaled..),
@@ -174,30 +151,18 @@ lems52.dist <- ggplot(data) +
     labs(title = paste("LEMS at week 52 (", toupper(data.set), ")", sep = "")) +
     ylab("Density (scaled)")
 # Level of injury
-nli.dist <- ggplot(data, aes(level)) +
-    geom_bar(fill = "#2EB62C") +
-    labs(title = paste("Neurological level of injury (", toupper(data.set), ")",
-                       sep = "")) +
-    scale_y_continuous(expand = c(0, 0), limits = c(0, 2750)) +
-    theme_classic() +
-    theme(axis.title.y = element_blank(),
-          axis.title.x = element_blank())
+nli.dist <- plot.bar(data, "splvl", "count",
+                     title = paste("Neurological level of injury (",
+                                   toupper(data.set), ")", sep = ""))
 if (save.plots) {
     ggsave(paste("~/Desktop/", toupper(data.set), "-NLI.pdf", sep = ""),
            plot = nli.dist,
            width = 15, height = 20, units = "cm",
            device = "pdf")
 }
-nli.dist.no.NA <- data %>%
-    filter(!is.na(level)) %>%
-    ggplot(aes(level)) +
-    geom_bar(fill = "#2EB62C") +
-    labs(title = paste("Neurological level of injury (", toupper(data.set), ")",
-                       sep = "")) +
-    scale_y_continuous(expand = c(0, 0), limits = c(0, 2750)) +
-    theme_classic() +
-    theme(axis.title.y = element_blank(),
-          axis.title.x = element_blank())
+nli.dist.no.NA <- plot.bar(data, "splvl", "count", include.NA = FALSE,
+                           title = paste("Neurological level of injury (",
+                                         toupper(data.set), ")", sep = ""))
 if (save.plots) {
     ggsave(paste("~/Desktop/", toupper(data.set), "-NLI-no-NA.pdf", sep = ""),
            plot = nli.dist.no.NA,
@@ -259,7 +224,25 @@ if (save.plots) {
            width = 40, height = 20, units = "cm",
            device = "pdf")
 }
-# ------------------------------------------------------------------------------
+
+################################################################################
+# Visualise missingness in data
+################################################################################
+## Visualise original missingness patterns
+# reference for interpretation of the following plot:
+# https://cran.r-project.org/web/packages/finalfit/vignettes/missing.html
+missing_dist <- data %>%
+    missing_pairs(dependent = "lower52",
+                  explanatory = c("age", "sexcd", "level", "lower01", "ais1"),
+                  title = paste(toupper(data.set), " - missing data", sep = ""))
+missing_dist_fill <- data %>%
+    missing_pairs(dependent = "lower52",
+                  explanatory = c("age", "sexcd", "level", "lower01", "ais1"),
+                  position = "fill",
+                  title = paste(toupper(data.set), " - missing data", sep = ""))
+# x-axis represent patients, light blue = NA
+missing_heatmap <- data %>%
+    missing_plot(title = paste(toupper(data.set), " - missing data", sep = ""))
 ## Visualise the co-occurrence of missingness (ONLY Sygen)
 # previous visualisations worked w/ smaller subset of variables; EMSCI only
 # adapted on this subset (as of 04 November)

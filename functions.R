@@ -1,8 +1,8 @@
 ################################################################################
 # SCI - Handling missing data project
-# L. Bourguignon
+# L. Bourguignon & L.P. Lukas
 # First version : 06.07.2021
-# Last update : 12.10.2021
+# Last update : 12.11.2021
 # ------------------------------------------------------------------------------
 # FUNCTIONS
 ################################################################################
@@ -512,4 +512,57 @@ add_joint_title <- function(aggregate_plot, title) {
                                  rel_heights = c(0.1, 1)
                                  )
     return (plot_with_title)
+}
+
+plot.bar <- function(data, variable, y.type, include.NA = TRUE,
+                     title, fill = "#2EB62C"){
+    # plot bar chart (either counts or proportions)
+    # (see https://dplyr.tidyverse.org/articles/programming.html#indirection-2
+    #  for how variable argument is handled)
+    #
+    # params:
+    #   data -- data set
+    #   variable -- ... to plot; this should be a string!
+    #   y.type -- count or proportional
+    #   include.NA -- include NAs in the plot
+    if (!(y.type %in% c("count", "prop"))) {
+        return (FALSE)
+    }
+    if (!include.NA) { # remove NAs from data
+        data <- data %>%
+            filter(!is.na(.data[[variable]]))
+    }
+    # determine max. range of y axis
+    n <- data %>%
+        distinct(ptid) %>%
+        count() %>%
+        pull(n)
+    n.biggest.group <- data %>%
+        group_by(.data[[variable]]) %>%
+        count() %>%
+        pull(n) %>%
+        max()
+    if (y.type == "count") y.max <- n.biggest.group
+    else y.max <- ceiling((n.biggest.group / n) * 10) / 10
+    # set up plot
+    plot <- ggplot(data)
+    if (y.type == "count") plot <- plot + geom_bar(mapping = aes(x = .data[[variable]]),
+                                                   fill = fill)
+    else plot <-  plot + geom_bar(mapping = aes(x = .data[[variable]],
+                                                y = ..prop..,
+                                                group = 1),
+                                  fill = fill)
+    # style plot
+    if (y.type == "count") plot <- plot +  scale_y_continuous(expand = c(0, 0),
+                                                              limits = c(0, y.max))
+    else plot <- plot + scale_y_continuous(expand = c(0, 0), limits = c(0, y.max),
+                                           labels = scales::percent_format())
+    plot <- plot +
+        theme_classic() +
+        theme(axis.title.y = element_blank(),
+              axis.title.x = element_blank())
+
+    if (!missing(title)) plot <- plot + labs(title = title)
+
+    return (plot)
 }
