@@ -3,8 +3,8 @@
 # created: 25 October 2021
 ################################################################################
 # read and appropriately format EMSCI data
-# Note: NT (not tested) for now treated as NA; in the future, this could be
-#       changed as it might carry some information
+# Note: NT (not tested), INT (intermediate) for now treated as NA; in the future,
+#       this could be changed as it might carry some information
 ################################################################################
 
 library(tidyverse)
@@ -78,6 +78,13 @@ emsci_raw %>%
     filter(Patientennummer == 522034) %>%
     arrange(ExamStage, desc()) %>%
     View()
+# example operation on data set: contribution of different centres
+emsci_raw %>%
+    filter(ExamStage == "very acute") %>%
+    group_by(Center) %>%
+    count() %>%
+    arrange(desc(n)) %>%
+    view()
 
 # map to format of Sygen data
 # note that Sygen data is originally in wide form while EMSCI is already in long
