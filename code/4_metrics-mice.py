@@ -2,7 +2,7 @@
 # SCI - Handling missing data project
 # L. Bourguignon & L.P. Lukas
 # First version : 04.03.2022
-# Last update : 04.03.2022
+# Last update : 14.06.2023
 # ------------------------------------------------------------------------------
 # Compute metrcis for mice imputations
 ################################################################################
