@@ -1,0 +1,18 @@
+conda activate master_thesis
+module load new gcc/4.8.2 r/3.6.0 
+bsub -W 0:10 -R "rusage[mem=1024]" "Rscript --vanilla 1_define-subsets.R 'lower52'"
+bsub -W 0:10 -R "rusage[mem=1024]" "Rscript --vanilla 1_define-subsets.R 'lower26'"
+bash submit_single-imputation.sh
+bash submit_mice.sh 
+bash submit_metrics-mice.sh
+bsub -W 03:59 -R "rusage[mem=1024]" "python 5_make-df-metrics.py --outcome 'lower52'"
+bsub -W 03:59 -R "rusage[mem=1024]" "python 5_make-df-metrics.py --outcome 'lower26'"
+bsub -W 3:59 -R "rusage[mem=1024]" "Rscript --vanilla 6_lr-after-imputation.R 'lower52'"
+bsub -W 3:59 -R "rusage[mem=1024]" "Rscript --vanilla 6_lr-after-imputation.R 'lower26'"
+bsub -W 0:30 -R "rusage[mem=1024]" "Rscript --vanilla 7a_make-figures_metrics.R 'lower26'"
+bsub -W 0:30 -R "rusage[mem=1024]" "Rscript --vanilla 7a_make-figures_metrics.R 'lower52'"
+bsub -W 0:30 -R "rusage[mem=1024]" "Rscript --vanilla 7b_make-figures_lr-output.R 'FALSE'"
+bsub -W 0:30 -R "rusage[mem=1024]" "Rscript --vanilla 7b_make-figures_lr-output.R 'TRUE'"
+bsub -W 03:59 -R "rusage[mem=1024]" "Rscript --vanilla 8_distribution-after-imputation.R 'lower52'"
+bsub -W 03:59 -R "rusage[mem=1024]" "Rscript --vanilla 8_distribution-after-imputation.R 'lower26'"
+bsub -W 03:59 -R "rusage[mem=1024]" "Rscript --vanilla 9_comparison_fitpool.R"
