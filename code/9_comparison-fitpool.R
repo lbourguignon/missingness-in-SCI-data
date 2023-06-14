@@ -28,9 +28,10 @@ reshape_summary <- function(extracted_summary, sim, i, var, pat, imp, mask){
 make_df <- function(test_CIplot, variable_interest, pattern){
   test_CIplot_sub <- dplyr::filter(test_CIplot,
                                    var_with_NA %in% c(variable_with_NA),
-                                   simulation %in% c(sim), 
+                                   simulation %in% c(sim),
                                    variables %in% c(variable_interest),
                                    pattern_NA == pattern)
+  
   mean_raw_bias <- c()
   lower_raw_bias <- c()
   upper_raw_bias <- c()
@@ -38,12 +39,13 @@ make_df <- function(test_CIplot, variable_interest, pattern){
   coverage_rate <- c()
   average_width <- c()
   RMSE_vec <- c()
+  
   for (imp in imputations){
-    controls <- dplyr::filter(test_CIplot_sub, 
-                              order %in% c("poolfit"), 
+    controls <- dplyr::filter(test_CIplot_sub,
+                              order %in% c("poolfit"),
                               imputation %in% imp)[['coef']]
     #print(controls)
-    cases <- dplyr::filter(test_CIplot_sub, 
+    cases <- dplyr::filter(test_CIplot_sub,
                            order %in% c("fitpool"),
                            imputation %in% imp)[['coef']]
     #print(cases)
@@ -83,52 +85,10 @@ make_df <- function(test_CIplot, variable_interest, pattern){
                                        `Mean` = 'mean', 
                                        `Complete case analysis` = 'case_deletion',
                                        `Last observation carried forward` ='last_obs')
-  write.csv(estimates, paste0("./important_output/df_CI_plots/", sim,
-                              "_outcome-", outcome, 
-                              '_NA-', variable_with_NA, 
-                              '_explan-variable-', variable_interest,
-                              '_pattern-', pattern,
-                              "_metrics-CI_comparison-order.csv"), row.names = FALSE)
+
   return(estimates)
 }
 
-make_plot <- function(estimates, variable_interest, lim_x){
-  finalTop <- ggplot(data=estimates, aes(x=RB, y=imputation)) +
-    
-    # add error bars, parameterized by other columns of 'estimates'
-    geom_errorbarh(aes(xmin=lower, xmax=upper, color=problem, height = .2)) +
-    
-    # add point estimate, colored according to the problem column of 'estimate'  
-    geom_point(aes(color=problem))  + 
-    
-    # draw a vertical line at the true difference in mean.
-    geom_vline(xintercept = 0, color="black") +
-    
-    # color the "problem" status according to a scale we set up separately
-    colorScale +
-    
-    # Get rid of gridlines, axes
-    theme_minimal() +
-    
-    # Some theme changes. Get rid of the legend.
-    theme(legend.position = "none") +
-    xlim(lim_x[1], lim_x[2]) +
-    xlab('') +
-    ylab('') +
-    theme(axis.text.x = element_text(size=12),
-          axis.text.y = element_text(size=12))#,
-  #axis.title.x = element_text(size=14, face="bold"),
-  #axis.title.y = element_text(size=14, face="bold"),
-  #axis.title.x = element_blank(),
-  #axis.title.y = element_blank())
-  
-  if (!(variable_interest == 'lower01')){
-    finalTop <- finalTop +
-      theme(axis.text.y = element_blank())
-  }
-  
-  return(finalTop)
-}
 
 ################################################################################
 # Declare variables
@@ -205,7 +165,6 @@ df_all <- rbind(df_results_poolfit, df_results_fitpool)
 
 #df_all <- read.csv('/cluster/home/blucie/SCI/missing_data/code/important_output/df_CI_plots/df_comparison_order.csv')
 
-library(stringr)
 df_all$variables <- str_remove(df_all$variables, "_MCAR")
 df_all$variables <- str_remove(df_all$variables, "_MAR")
 df_all$variables <- str_remove(df_all$variables, "_MNAR")
@@ -221,25 +180,25 @@ df_all$variables <- str_replace(df_all$variables, "sexcd", 'male-female')
 estimates_lower01_MCAR <- make_df(df_all, 'lower01', 'MCAR')
 plot_estimates_lower01_MCAR <- make_plot(estimates_lower01_MCAR, 'lower01', c(-1,1.1)) +
   ylab('MCAR') +
-  ggtitle('LEMS at baseline') + 
+  ggtitle('LEMS at baseline') +
   theme(axis.title.y = element_text(size=12, face="bold"),
         plot.title = element_text(size=12, face="bold"))
 
 estimates_AISB_MCAR <- make_df(df_all, 'AIS A-AIS B', 'MCAR')
-plot_estimates_AISB_MCAR <- make_plot(estimates_AISB_MCAR, 'AIS A-AIS B', c(-12,4)) +
-  ggtitle('AIS A - AIS B') + 
+plot_estimates_AISB_MCAR <- make_plot(estimates_AISB_MCAR, 'AIS A-AIS B', c(-1,1.1)) +
+  ggtitle('AIS A - AIS B') +
   theme(axis.title.y = element_text(size=12, face="bold"),
         plot.title = element_text(size=12, face="bold"))
 
 estimates_AISC_MCAR <- make_df(df_all, 'AIS A-AIS C', 'MCAR')
-plot_estimates_AISC_MCAR <- make_plot(estimates_AISC_MCAR, 'AIS A-AIS C', c(-18.5,10))+
-  ggtitle('AIS A - AIS C') + 
+plot_estimates_AISC_MCAR <- make_plot(estimates_AISC_MCAR, 'AIS A-AIS C', c(-1,10))+
+  ggtitle('AIS A - AIS C') +
   theme(axis.title.y = element_text(size=12, face="bold"),
         plot.title = element_text(size=12, face="bold"))
 
 estimates_AISD_MCAR <- make_df(df_all, 'AIS A-AIS D', 'MCAR')
-plot_estimates_AISD_MCAR <- make_plot(estimates_AISD_MCAR, 'AIS A-AIS D', c(-40,31))+
-  ggtitle('AIS A - AIS D') + 
+plot_estimates_AISD_MCAR <- make_plot(estimates_AISD_MCAR, 'AIS A-AIS D', c(-1,26))+
+  ggtitle('AIS A - AIS D') +
   theme(axis.title.y = element_text(size=12, face="bold"),
         plot.title = element_text(size=12, face="bold"))
 
@@ -249,11 +208,11 @@ plot_estimates_lower01_MAR <- make_plot(estimates_lower01_MAR, 'lower01', c(-1,1
   theme(axis.title.y = element_text(size=12, face="bold"),
         plot.title = element_text(size=12, face="bold"))
 estimates_AISB_MAR <- make_df(df_all, 'AIS A-AIS B', 'MAR')
-plot_estimates_AISB_MAR <- make_plot(estimates_AISB_MAR, 'AIS A-AIS B', c(-12,4)) 
+plot_estimates_AISB_MAR <- make_plot(estimates_AISB_MAR, 'AIS A-AIS B', c(-1,1.1))
 estimates_AISC_MAR <- make_df(df_all, 'AIS A-AIS C', 'MAR')
-plot_estimates_AISC_MAR <- make_plot(estimates_AISC_MAR, 'AIS A-AIS C', c(-18.5,10)) 
+plot_estimates_AISC_MAR <- make_plot(estimates_AISC_MAR, 'AIS A-AIS C', c(-1,10))
 estimates_AISD_MAR <- make_df(df_all, 'AIS A-AIS D', 'MAR')
-plot_estimates_AISD_MAR <- make_plot(estimates_AISD_MAR, 'AIS A-AIS D', c(-40,31))
+plot_estimates_AISD_MAR <- make_plot(estimates_AISD_MAR, 'AIS A-AIS D', c(-1,26))
 
 estimates_lower01_MNAR <- make_df(df_all, 'lower01', 'MNAR')
 plot_estimates_lower01_MNAR <- make_plot(estimates_lower01_MNAR, 'lower01', c(-1,1.1))+
@@ -261,11 +220,11 @@ plot_estimates_lower01_MNAR <- make_plot(estimates_lower01_MNAR, 'lower01', c(-1
   theme(axis.title.y = element_text(size=12, face="bold"),
         plot.title = element_text(size=12, face="bold"))
 estimates_AISB_MNAR <- make_df(df_all, 'AIS A-AIS B', 'MNAR')
-plot_estimates_AISB_MNAR <- make_plot(estimates_AISB_MNAR, 'AIS A-AIS B', c(-12,4)) 
+plot_estimates_AISB_MNAR <- make_plot(estimates_AISB_MNAR, 'AIS A-AIS B', c(-1,1.1))
 estimates_AISC_MNAR <- make_df(df_all, 'AIS A-AIS C', 'MNAR')
-plot_estimates_AISC_MNAR <- make_plot(estimates_AISC_MNAR, 'AIS A-AIS C', c(-18.5,10)) 
+plot_estimates_AISC_MNAR <- make_plot(estimates_AISC_MNAR, 'AIS A-AIS C', c(-1,10))
 estimates_AISD_MNAR <- make_df(df_all, 'AIS A-AIS D', 'MNAR')
-plot_estimates_AISD_MNAR <- make_plot(estimates_AISD_MNAR, 'AIS A-AIS D', c(-40,31))
+plot_estimates_AISD_MNAR <- make_plot(estimates_AISD_MNAR, 'AIS A-AIS D', c(-1,26))
 
 P <- plot_grid(
   plot_estimates_lower01_MCAR, plot_estimates_AISB_MCAR, plot_estimates_AISC_MCAR, plot_estimates_AISD_MCAR,
@@ -273,13 +232,6 @@ P <- plot_grid(
   plot_estimates_lower01_MNAR, plot_estimates_AISB_MNAR, plot_estimates_AISC_MNAR, plot_estimates_AISD_MNAR,
   ncol = 4 , rel_widths = c(2.5, 1, 1, 1), scale=0.9
 ) + #perhaps reduce this for a bit more space
-  draw_label("Mean difference between estimates before and after imputation", fontface='bold', x=0.5, y=  0, vjust=-0.5, angle= 0) +
+  draw_label("Mean difference between estimates in fit-pool versus pool-fit scenarios", fontface='bold', x=0.5, y=  0, vjust=-0.5, angle= 0) +
   draw_label("Imputation method", x=0, y=0.5, vjust= 1.5, angle=90, fontface='bold')
-
-
-filename = paste0("./important_output/CI_plots/", sim,
-                  "_outcome-", outcome, 
-                  '_NA-', variable_with_NA, 
-                  "_CI_comparison-order.png")
-ggsave(filename, plot = P, width=29.7, height=21.0, unit="cm")
 
