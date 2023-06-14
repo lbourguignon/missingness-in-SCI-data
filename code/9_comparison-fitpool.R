@@ -1,9 +1,16 @@
-source("./0_functions.R")
+###############################################################################
+# SCI - Handling missing data project 
+# L. Bourguignon & L.P. Lukas 
+# First version : 23.03.2023
+# Last update : 14.06.2023
+# ------------------------------------------------------------------------------
+# VISUALISE DISTRIBUTIONS AFTER IMPUTATION
+################################################################################
 
-library(ggplot2)
-library(grid)
-library(gridExtra)
-library(cowplot)
+################################################################################
+# Functions
+################################################################################
+
 
 reshape_summary <- function(extracted_summary, sim, i, var, pat, imp, mask){
   extracted_summary$simulation <- c(rep(sim, dim(extracted_summary)[1]))
@@ -123,6 +130,10 @@ make_plot <- function(estimates, variable_interest, lim_x){
   return(finalTop)
 }
 
+################################################################################
+# Declare variables
+################################################################################
+
 outcome <- 'lower52'
 simulations <- c('SygenCompleteNAanalysis', 'balanced')
 variables <- c('ais1', 'lower01', outcome)
@@ -133,61 +144,66 @@ colorScale <- scale_colour_manual(name="problem", values=problemColors)
 sim <- 'SygenCompleteNAanalysis'
 imputations <- c('pmm', 'rf', 'norm.predict')
 
-#df_results_fitpool <- data.frame(matrix(, nrow=0, ncol=0))
-#
-#for (sim in simulations){
-#  path = paste0('/cluster/scratch/blucie/NA_SCI/fitpool_results/', sim, '/', outcome, '/')
-#  for (i in c(1:500)){
-#    for (pat in patterns){
-#      for (var in variables){
-#        
-#        if (var == 'ais1'){
-#          imputations <- c('polr')
-#        } else {
-#          imputations <- c('pmm', 'norm.predict', 'rf')
-#        }
-#        for (imp in imputations){
-#          temp_df = read.csv(paste0(path, 'subset_', i, '_imputed_mice_n500_', imp, '_', var, '_', pat, '.csv'))
-#          
-#          temp_df$term[temp_df$term == 'levelthoracic'] <- 'cervical-thoracic'
-#          temp_df$term[temp_df$term == 'ais1AIS B'] <- 'AIS A-AIS B'
-#          temp_df$term[temp_df$term == 'ais1AIS C'] <- 'AIS A-AIS C'
-#          temp_df$term[temp_df$term == 'ais1AIS D'] <- 'AIS A-AIS D'
-#          
-#          temp_df_sub <- temp_df %>% select(term, estimate, p.value)
-#          temp_df_sub <- temp_df_sub %>% 
-#            rename(
-#              variables = term,
-#              coef = estimate,
-#              pvalues = p.value
-#            )
-#          
-#          temp_sum <- reshape_summary(temp_df_sub, sim, i, var, pat, imp, mask=F)
-#          
-#          df_results_fitpool <- rbind(df_results_fitpool, temp_sum)
-#          
-#        }
-#      }
-#    }
-#  }
-#}
-#
-#df_results_fitpool$order <- 'fitpool'
-#
-#print(head(df_results_fitpool))
-#
-#df_results_poolfit <- read.csv('/cluster/scratch/blucie/NA_SCI/subsets_imputed/lr-output_all-subsets_lower52_version2.csv')
-#
-#df_results_poolfit$order <- 'poolfit'
-#
-#df_results_poolfit <- subset(df_results_poolfit, select = -c(model))
-#print(head(df_results_poolfit))
-#
-#df_all <- rbind(df_results_poolfit, df_results_fitpool)
-#
+################################################################################
+# Prepare datafrmae with fitpool results
+################################################################################
+
+df_results_fitpool <- data.frame(matrix(, nrow=0, ncol=0))
+
+for (sim in simulations){
+ path = paste0('/cluster/scratch/blucie/NA_SCI/fitpool_results/', sim, '/', outcome, '/')
+ for (i in c(1:500)){
+   for (pat in patterns){
+     for (var in variables){
+       
+       if (var == 'ais1'){
+         imputations <- c('polr')
+       } else {
+         imputations <- c('pmm', 'norm.predict', 'rf')
+       }
+       for (imp in imputations){
+         temp_df = read.csv(paste0(path, 'subset_', i, '_imputed_mice_n500_', imp, '_', var, '_', pat, '.csv'))
+         
+         temp_df$term[temp_df$term == 'levelthoracic'] <- 'cervical-thoracic'
+         temp_df$term[temp_df$term == 'ais1AIS B'] <- 'AIS A-AIS B'
+         temp_df$term[temp_df$term == 'ais1AIS C'] <- 'AIS A-AIS C'
+         temp_df$term[temp_df$term == 'ais1AIS D'] <- 'AIS A-AIS D'
+         
+         temp_df_sub <- temp_df %>% select(term, estimate, p.value)
+         temp_df_sub <- temp_df_sub %>% 
+           rename(
+             variables = term,
+             coef = estimate,
+             pvalues = p.value
+           )
+         
+         temp_sum <- reshape_summary(temp_df_sub, sim, i, var, pat, imp, mask=F)
+         
+         df_results_fitpool <- rbind(df_results_fitpool, temp_sum)
+         
+       }
+     }
+   }
+ }
+}
+
+df_results_fitpool$order <- 'fitpool'
+
+################################################################################
+# Combine fitpool and poolfit results
+################################################################################
+
+df_results_poolfit <- read.csv('/cluster/scratch/blucie/NA_SCI/subsets_imputed/lr-output_all-subsets_lower52_version2.csv')
+
+df_results_poolfit$order <- 'poolfit'
+
+df_results_poolfit <- subset(df_results_poolfit, select = -c(model))
+
+df_all <- rbind(df_results_poolfit, df_results_fitpool)
+
 #write.csv(df_all, '/cluster/home/blucie/SCI/missing_data/code/important_output/df_CI_plots/df_comparison_order.csv')
 
-df_all <- read.csv('/cluster/home/blucie/SCI/missing_data/code/important_output/df_CI_plots/df_comparison_order.csv')
+#df_all <- read.csv('/cluster/home/blucie/SCI/missing_data/code/important_output/df_CI_plots/df_comparison_order.csv')
 
 library(stringr)
 df_all$variables <- str_remove(df_all$variables, "_MCAR")
@@ -198,7 +214,9 @@ df_all$variables <- str_replace(df_all$variables, "ais1", 'AIS A-')
 df_all$variables <- str_replace(df_all$variables, "level", 'cervical-')
 df_all$variables <- str_replace(df_all$variables, "sexcd", 'male-female')
 
-#print(table(df_all$variables))
+################################################################################
+# Plotting
+################################################################################
 
 estimates_lower01_MCAR <- make_df(df_all, 'lower01', 'MCAR')
 plot_estimates_lower01_MCAR <- make_plot(estimates_lower01_MCAR, 'lower01', c(-1,1.1)) +
