@@ -1,50 +1,25 @@
-# Study of missingness in spinal cord injury data
+# Studying missingness in spinal cord injury data: Challenges and impact of data imputation
 
-## Description
+👩‍🔬 :man_scientist: **Authors**:  
+Lucie Bourguignon, Louis P. Lukas, James D. Guest, Fred Geisler, Vanessa Noonan, Armin Curt, Sarah C. Brüningk, Catherine R. Jutzeler
 
-The following describes the structure of the file `missing_data_code.R`.
+:memo: **Short summary:**
+Spinal cord injury (SCI) research has gathered extensive data, but analysis methods rely on complete data, posing challenges when dealing with missingness. Researchers commonly exclude patients with missing data or use imputation methods. This study aimed to understand how handling missing data in SCI registries affects reported results and provide guidelines for future research. Using Sygen clinical trial data, we analyzed the impact of missing data variables, patterns, and imputation strategies.
 
-## Dependencies
+## External resources
 
-- requires `finalfit` library
-- runs in `R version 4.0.2`
+:open_book:	**Link to paper**: [Submitted](https://www.google.com/)
 
-## Skeleton
+:bar_chart: **Link to data**: [Sygen Trial](https://journals.lww.com/spinejournal/Fulltext/2001/12151/The_Sygen__Multicenter_Acute_Spinal_Cord_Injury.15.aspx)
 
-- Packages and seed
-- Data loading
-- Functions
-	- `subset_col(vec, df)` : subset columns in `vec` from dataframe `df`; output is a dataframe
-	- `vector_var(vec, week, order)` : add string `week` to all elements of `vec` as pre- or suffix based on `order` (take values 'before' or 'after'); output is a vector
-	- `generate_missing_col_CAR(data, prop, col)` : NAs introduced **completely at random** from column `col` in dataframe `df`; output is a vector
-	- `generate_missing_col_AR(data, prop, col)` : NAs introduced **at random** (more missingness in male population) from column `col` in dataframe `df`; output is a dataframe with columns `ptid` and `paste0(col, '_MAR')`
-	- `generate_missing_col_NAR(data, col)` : NAs introduced **not at random** (more AIS D are missing) from column `col` in dataframe `df`; output is a vector --> more work needed on this function, proportions not included at the moment
-- Report number of missing data depending on different scenarii in Sygen data
-- Visualise missing data in raw Sygen cohort
-- Filter out missing values to use only complete cases in subsequent analyses 
-- Introduce missing data (one column per variable per pattern of NAs)
-	- Create columns with 30% of data missing completely at random
-		- AIS grade : `ais1_MCAR`
-		- LEMS at baseline : `lower01_MCAR`
-		- LEMS at week 52 : `lower52_MCAR`
-	- Create columns with 30% of data missing at random
-		- AIS grade : `ais1_MAR`
-		- LEMS at baseline : `lower01_MAR`
-		- LEMS at week 52 : `lower52_MAR`
-	- Create columns with 30% of data missing not at random
-		- AIS grade : `ais1_MNAR`
-		- LEMS at baseline : `lower01_MNAR`
-		- LEMS at week 52 : `lower52_MNAR`
-	- Convert the different to the correct type : factor or numeric variables
-	- Visual inspection of missingness introduced
-		- 0 -- baseline
-		- 1A -- MCAR in a confounding variable (`ais1_MCAR`)
-		- 1B -- MAR in a confounding variable (`ais1_MAR`)
-		- 1C -- MNAR in a confounding variable (`ais1_MNAR`)
-		- 2A -- MCAR in a explanatory variable (`lower01_MCAR`)
-		- 2B -- MAR in a explanatory variable (`lower01_MAR`)
-		- 2C -- MNAR in a explanatory variable (`lower01_MNAR`)
-		- 3A -- MCAR in a outcome variable (`lower52_MCAR`)
-		- 3B -- MAR in a outcome variable (`lower52_MAR`)
-		- 3C -- MNAR in a outcome variable (`lower52_MNAR`)
-- Imputation & Statistical analyses and comparison
+## Contact
+Questions or comments related to the manuscript:
+* :e-mail: [Lucie Bourguignon](mailto:lucie.bourguignon@hest.ethz.ch?subject=[GitHub]%20Source%20Han%20Sans)
+* :e-mail: [Prof. Dr. Catherine Jutzeler](mailto:catherine.jutzeler@hest.ethz.ch?subject=[GitHub]%20Source%20Han%20Sans)
+
+This repository is maintained by:
+* :wrench: [Lucie Bourguignon](https://github.com/lbourguignon)
+
+## Funding
+
+This study was supported by the [Swiss National Science Foundation](http://www.snf.ch/en/Pages/default.aspx) (Ambizione Grant #PZ00P3_186101, Jutzeler) and the [International Foundation for Research in Paraplegia](https://www.irp.ch/en/foundation/) (Brüningk, Jutzeler). Sarah Brüningk is supported by the Botnar Research Centre for Child Health Postdoctoral Excellence Programme (#PEP-2021-1008). The funders had no role in study design, data collection and analysis, decision to publish, or preparation of the manuscript.
