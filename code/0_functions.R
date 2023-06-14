@@ -17,7 +17,7 @@ library(pacman)
 pacman::p_load("finalfit", "tidyr", "ggplot2", "mice", "nnet", "ggpubr", "rlang", 
                "stringr", "dplyr", "reshape2", "naniar", "networkD3", "rpart",
                "rpart.plot", "DescTools", "VIM", "gghalves", "Metrics",
-               "grid", "gridExtra", "cowplot")
+               "grid", "gridExtra", "cowplot", "stringr")
 
 set.seed(1)
 
