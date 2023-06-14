@@ -1,11 +1,21 @@
+###############################################################################
+# SCI - Handling missing data project 
+# L. Bourguignon & L.P. Lukas 
+# First version : 23.03.2023
+# Last update : 14.06.2023
+# ------------------------------------------------------------------------------
+# VISUALISE OUTPUT OF THE LINEAR REGRESSION AFTER IMPUTATION - Confidence intervals
+################################################################################
 
-#data_lr_v2 = read.csv('/Volumes/blucie/PhD/1_SCI/6_Missing_data/lr-after-imputation/500subsets/lr-output_all-subsets_lower52_version2.csv')
-#data_lr_v2 = read.csv('/Users/blucie/lr-output_all-subsets_lower52_testn10_version2.csv')
+################################################################################
+# Sourcing additional scripts
+################################################################################
 
-library(ggplot2)
-library(grid)
-library(gridExtra)
-library(cowplot)
+source("./0_functions.R")
+
+################################################################################
+# Argument loading
+################################################################################
 
 args = commandArgs(trailingOnly=TRUE)
 variable_with_NA <- args[1]
@@ -15,9 +25,6 @@ variables <- c('lower01', outcome, 'ais1')
 beta_coefficients <- c('lower01', "AIS A-AIS B", "AIS A-AIS C", "AIS A-AIS D")
 patterns = c('MCAR', 'MAR', 'MNAR')
 data_path = '/cluster/scratch/blucie/NA_SCI/subsets_imputed/'
-
-data_lr_v2 <- read.csv(paste0(data_path, 'lr-output_all-subsets_', outcome, '_version2.csv'))
-
 imputations = c('case_deletion', 'lr', 'knn', 'RF', 'SVM_linear', 'SVM_rbf', 'mean')
 if (variable_with_NA == outcome){
   imputations = append(imputations, c('norm.predict', 'pmm', 'rf', 'last_obs'))
@@ -30,106 +37,19 @@ if (variable_with_NA == outcome){
 problemColors <- c("TRUE"="red", "FALSE"="darkgrey")
 colorScale <- scale_colour_manual(name="problem", values=problemColors)
 
+################################################################################
+# Data preparation
+################################################################################
+
+data_lr_v2 <- read.csv(paste0(data_path, 'lr-output_all-subsets_', outcome, '_version2.csv'))
+
 test_CIplot <- dplyr::filter(data_lr_v2,
                              simulation == sim, 
                              var_with_NA %in% c(variable_with_NA))
 
-make_df <- function(test_CIplot, variable_interest, pattern){
-  test_CIplot_sub <- dplyr::filter(test_CIplot, 
-                                   variables %in% c(variable_interest),
-                                   pattern_NA == pattern)
-  controls <- dplyr::filter(test_CIplot_sub, imputation %in% c("baseline"))[['coef']]
-  mean_raw_bias <- c()
-  lower_raw_bias <- c()
-  upper_raw_bias <- c()
-  percentage_bias <- c()
-  coverage_rate <- c()
-  average_width <- c()
-  RMSE_vec <- c()
-  for (imp in imputations){
-    cases <- dplyr::filter(test_CIplot_sub, imputation %in% imp)[['coef']]
-    diff <- cases - controls
-    mean_raw_bias <- append(mean_raw_bias, mean(diff))
-    lower_raw_bias <- append(lower_raw_bias, quantile(diff, probs=c(0.025)))
-    upper_raw_bias <- append(upper_raw_bias, quantile(diff, probs=c(0.975)))
-    percentage_bias <- append(percentage_bias, mean(100*abs(diff/controls)))
-    coverage_rate <- append(coverage_rate, mean(quantile(diff, probs=c(0.025)) < controls & controls < quantile(diff, probs=c(0.975))))
-    average_width <- append(average_width, mean(quantile(diff, probs=c(0.975)) - quantile(diff, probs=c(0.025))))
-    RMSE_vec <- append(RMSE_vec, mean(sqrt(diff^2)))
-  }
-  
-  estimates <- data.frame(imputation = imputations,
-                          RB = mean_raw_bias,
-                          lower = lower_raw_bias,
-                          upper = upper_raw_bias,
-                          PB = percentage_bias,
-                          CR = coverage_rate,
-                          CW = average_width,
-                          RMSE_beta = RMSE_vec
-  )
-  
-  estimates$problem = estimates$lower > 0 | estimates$upper < 0
-  estimates$imputation <- factor(estimates$imputation, 
-                                 levels = c('norm.predict', 'pmm', 'rf', 'polr', 'RF', 'SVM_rbf', 'SVM_linear', 
-                                            'lr', 'knn', 'mean', 'case_deletion', 'last_obs'))
-  levels(estimates$imputation) <- list(`Norm predict (mice)` = 'norm.predict', 
-                                       `Predictive mean matching (mice)` = 'pmm', 
-                                       `Random forest (mice)` = 'rf', 
-                                       `Polytomous regression (mice)` = 'polr',
-                                       `Random forest` = 'RF', 
-                                       `SVM with RBF kernel` = 'SVM_rbf', 
-                                       `SVM with linear kernel` = 'SVM_linear', 
-                                       `Linear regression` = 'lr', 
-                                       `k-NN` = 'knn', 
-                                       `Mean` = 'mean', 
-                                       `Complete case analysis` = 'case_deletion',
-                                       `Last observation carried forward` ='last_obs')
-  write.csv(estimates, paste0("./important_output/df_CI_plots/", sim,
-                              "_outcome-", outcome, 
-                              '_NA-', variable_with_NA, 
-                              '_explan-variable-', variable_interest,
-                              '_pattern-', pattern,
-                              "_metrics-CI.csv"), row.names = FALSE)
-  return(estimates)
-}
-
-make_plot <- function(estimates, variable_interest, lim_x){
-  finalTop <- ggplot(data=estimates, aes(x=RB, y=imputation)) +
-    
-    # add error bars, parameterized by other columns of 'estimates'
-    geom_errorbarh(aes(xmin=lower, xmax=upper, color=problem, height = .2)) +
-    
-    # add point estimate, colored according to the problem column of 'estimate'  
-    geom_point(aes(color=problem))  + 
-    
-    # draw a vertical line at the true difference in mean.
-    geom_vline(xintercept = 0, color="black") +
-    
-    # color the "problem" status according to a scale we set up separately
-    colorScale +
-    
-    # Get rid of gridlines, axes
-    theme_minimal() +
-    
-    # Some theme changes. Get rid of the legend.
-    theme(legend.position = "none") +
-    xlim(lim_x[1], lim_x[2]) +
-    xlab('') +
-    ylab('') +
-    theme(axis.text.x = element_text(size=12),
-          axis.text.y = element_text(size=12))#,
-          #axis.title.x = element_text(size=14, face="bold"),
-          #axis.title.y = element_text(size=14, face="bold"),
-          #axis.title.x = element_blank(),
-          #axis.title.y = element_blank())
-  
-  if (!(variable_interest == 'lower01')){
-    finalTop <- finalTop +
-      theme(axis.text.y = element_blank())
-  }
-  
-  return(finalTop)
-}
+################################################################################
+# Main
+################################################################################
 
 estimates_lower01_MCAR <- make_df(test_CIplot, 'lower01', 'MCAR')
 plot_estimates_lower01_MCAR <- make_plot(estimates_lower01_MCAR, 'lower01', c(-1,1.1)) +
