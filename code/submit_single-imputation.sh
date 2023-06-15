@@ -6,13 +6,9 @@
 MEMORY=1024
 TIME=02:00
 
-#for SIM in 'balanced'; do
-#for SIM in 'balanced' 'EMSCI' 'Murnau' 'SygenAll' 'SygenCompleteNAanalysis' 'SCIRehab'; do
-for SIM in 'balanced' 'EMSCI' 'SygenAll' 'SygenCompleteNAanalysis'; do
-    #for OUT in 'lower26' 'lower52'; do
-    for OUT in 'lower52'; do
+for SIM in 'balanced' 'SygenCompleteNAanalysis'; do
+    for OUT in 'lower26' 'lower52'; do
         for SUB in {1..500}; do
-        #for SUB in {1..2}; do
             bsub -W $TIME -R "rusage[mem=${MEMORY}]" "python 2_single-imputation.py --subset ${SUB} --outcome ${OUT} --scenario ${SIM}"
         done
     done

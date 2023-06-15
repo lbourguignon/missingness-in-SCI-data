@@ -1,5 +1,3 @@
-conda activate master_thesis
-module load new gcc/4.8.2 r/3.6.0 
 bsub -W 0:10 -R "rusage[mem=1024]" "Rscript --vanilla 1_define-subsets.R 'lower52'"
 bsub -W 0:10 -R "rusage[mem=1024]" "Rscript --vanilla 1_define-subsets.R 'lower26'"
 bash submit_single-imputation.sh
